@@ -25,9 +25,6 @@ jobs:
          username: ${{ github.actor }}
          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: patch
-        run: make patch
-
       - name: docker::build
         run:
           docker build . --tag ghcr.io/evintaxyz/platform-gateway:${{ github.ref_name }}
