@@ -1,26 +1,16 @@
 package main
 
 import (
-	"context"
-	"time"
-
-	"gorm.io/gorm"
+	"platform-gateway/internal/gateway"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Routes(Router *gin.Engine) {
-
-	Routes_v1 := Router.Group("/v1.0")
-	{
-		Routes_v1.GET("/ping", func(c *gin.Context) {
-			c.AbortWithStatus(200)
-		})
-	}
+func Routes(Router *gin.Engine, gw *gateway.Gateway) {
 
 	/**
 	* Define health probes to facilitate kubernetes health
-	* checks
+	* checks (not proxied through gateway)
 	 */
 	Routes_Probes := Router.Group("/probes")
 	{
@@ -29,43 +19,17 @@ func Routes(Router *gin.Engine) {
 		})
 
 		Routes_Probes.GET("/ready", func(c *gin.Context) {
-			db := c.MustGet("db").(*gorm.DB)
-
-			/**
-			* Check database connection to see if it's live
-			* or not
-			 */
-			ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
-			defer cancel()
-
-			connection, err := db.DB()
-			if err != nil {
-				c.AbortWithStatus(500)
-				return
-			}
-
-			if err := connection.PingContext(ctx); err != nil {
-				c.AbortWithStatus(500)
-				return
-			}
-
+			// TODO: Add gateway health checks here if needed
+			// For now, just return 200 OK
 			c.AbortWithStatus(200)
 		})
-
 	}
 
-	/*
-	* We have to show resource not found error if some
-	* application request undefined route.
+	/**
+	 * Gateway handles all other routes based on config
+	 * Routes like /users, /v1.0/transaction, etc. will be checked against config
+	 * If no match found, gateway returns 404 with standard error format
 	 */
-	Router.NoRoute(func(c *gin.Context) {
-		c.AbortWithStatusJSON(404, gin.H{
-			"status": "failed",
-			"error": gin.H{
-				"code":    404,
-				"message": "Resource not found",
-			},
-		})
-	})
+	Router.NoRoute(gw.ProxyHandler())
 
 }

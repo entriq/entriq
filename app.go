@@ -1,9 +1,13 @@
 package main
 
 import (
+	"log"
 	middleware "platform-gateway/middlewares"
 	"reflect"
 	"strings"
+
+	"platform-gateway/internal/config"
+	"platform-gateway/internal/gateway"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -19,6 +23,25 @@ func main() {
 	* environments.
 	 */
 	gin.SetMode(gin.DebugMode)
+
+	/**
+	 * Load gateway configuration from file
+	 * Checks CONFIG_PATH env var, defaults to ./config/config.yaml
+	 */
+	gatewayConfig, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load gateway config: %v", err)
+	}
+	log.Printf("Gateway config loaded successfully")
+
+	/**
+	 * Initialize gateway with configuration
+	 */
+	gw, err := gateway.New(gatewayConfig)
+	if err != nil {
+		log.Fatalf("Failed to initialize gateway: %v", err)
+	}
+	log.Printf("Gateway initialized successfully")
 
 	/**
 	 * Here we'll create go/gin Router handler to take care about
@@ -62,9 +85,9 @@ func main() {
 
 	/**
 	 * This is where we include all the routes define in our application
-	 * into the go-gin router
+	 * into the go-gin router (pass gateway instance)
 	 */
-	Routes(Router)
+	Routes(Router, gw)
 
 	/**
 	 * It's time to start the go/gin Router and make it available

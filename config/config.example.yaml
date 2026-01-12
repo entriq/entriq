@@ -1,0 +1,115 @@
+# Gateway Configuration Example
+# Copy this file to config.yaml and customize for your environment
+
+# Gateway global settings
+gateway:
+  # Default timeout for all services (can be overridden per service/route)
+  default_timeout: 30s
+
+  # Default retry policy (can be overridden per service)
+  default_retry:
+    max_attempts: 3                    # Maximum number of retry attempts
+    backoff: exponential                # Backoff strategy: exponential, linear, constant
+    initial_interval: 100ms             # Initial backoff interval
+    max_interval: 2s                    # Maximum backoff interval
+    multiplier: 2.0                     # Multiplier for exponential backoff
+
+  # HTTP connection pool settings
+  connection_pool:
+    max_idle_conns: 100                 # Maximum idle connections total
+    max_idle_conns_per_host: 10         # Maximum idle connections per host
+    idle_conn_timeout: 90s              # How long idle connections are kept
+
+# Header manipulation rules (applied to all proxied requests)
+headers:
+  # Headers to add to all requests
+  add:
+    X-Gateway-Version: "1.0"
+    X-Gateway-Name: "platform-gateway"
+
+  # Headers to forward from client (whitelist)
+  forward:
+    - "Authorization"
+    - "User-Agent"
+    - "X-Request-ID"
+    - "X-Correlation-ID"
+    - "Content-Type"
+    - "Accept"
+
+  # Headers to remove before forwarding
+  remove:
+    - "X-Internal-Token"
+
+  # Automatically add X-Forwarded-* headers (For, Proto, Host)
+  x_forwarded_headers: true
+
+# Microservices configuration
+services:
+  # Example user service
+  - name: user-service
+    base_url: http://user-service:8081
+    timeout: 10s                         # Service-level timeout (overrides gateway default)
+
+    # Service-level retry policy (overrides gateway default)
+    retry:
+      max_attempts: 2
+      backoff: exponential
+      initial_interval: 50ms
+      max_interval: 1s
+
+    routes:
+      # Prefix match: /users, /users/123, /users/123/profile all match
+      - path: /users
+        method: ["GET", "POST", "PUT", "DELETE"]
+        match_type: prefix
+        strip_path: false                # If true, "/users/123" becomes "/123" when forwarding
+
+      # Exact match: only /users/bulk matches
+      - path: /users/bulk
+        method: ["POST"]
+        match_type: exact
+        timeout: 60s                     # Route-level timeout (overrides service and gateway)
+        headers:
+          add:
+            X-Operation: "bulk-import"   # Route-specific headers
+
+  # Example transaction service
+  - name: transaction-service
+    base_url: http://transaction-service:8082
+    timeout: 15s
+    routes:
+      - path: /v1.0/transaction
+        match_type: prefix
+        # If method not specified, all HTTP methods are allowed
+
+  # Example authentication service
+  - name: auth-service
+    base_url: http://auth-service:8083
+    timeout: 5s
+    routes:
+      - path: /auth/login
+        method: ["POST"]
+        match_type: exact
+      - path: /auth/logout
+        method: ["POST"]
+        match_type: exact
+      - path: /auth/refresh
+        method: ["POST"]
+        match_type: exact
+
+# Logging configuration for proxied requests
+logging:
+  enabled: true
+  level: info                            # Log level: debug, info, warn, error
+  log_body: false                        # Include request/response bodies in logs
+  max_body_size: 1024                    # Maximum body size to log (bytes)
+
+  # Fields to include in logs
+  include:
+    - timestamp
+    - method
+    - path
+    - status_code
+    - latency
+    - service_name
+    - error
