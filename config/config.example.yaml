@@ -25,7 +25,7 @@ headers:
   # Headers to add to all requests
   add:
     X-Gateway-Version: "1.0"
-    X-Gateway-Name: "platform-gateway"
+    X-Gateway-Name: "entriq"
 
   # Headers to forward from client (whitelist)
   forward:

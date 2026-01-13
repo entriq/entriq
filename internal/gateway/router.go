@@ -3,7 +3,7 @@ package gateway
 import (
 	"errors"
 	"fmt"
-	"platform-gateway/internal/config"
+	"entriq/internal/config"
 	"sort"
 	"strings"
 )

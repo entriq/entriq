@@ -9,7 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"platform-gateway/internal/config"
+	"entriq/internal/config"
 	"time"
 
 	"github.com/google/uuid"

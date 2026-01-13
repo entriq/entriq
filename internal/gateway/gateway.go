@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"platform-gateway/internal/config"
-	"platform-gateway/internal/middleware"
+	"entriq/internal/config"
+	"entriq/internal/middleware"
 	"time"
 
 	"github.com/gin-gonic/gin"

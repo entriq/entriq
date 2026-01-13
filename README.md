@@ -1,4 +1,4 @@
-# Platform Gateway
+# Entriq
 
 A high-performance API gateway built with Go and Gin framework that routes requests to backend microservices with advanced features like retry logic, header manipulation, and request/response logging.
 
@@ -164,7 +164,7 @@ make run
 ### Project Structure
 
 ```
-platform-gateway/
+entriq/
 ├── config/                      # Configuration files
 │   ├── config.yaml              # Active config
 │   └── config.example.yaml      # Example with docs
@@ -219,13 +219,13 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: platform-gateway
+  name: entriq
 spec:
   template:
     spec:
       containers:
       - name: gateway
-        image: your-registry/platform-gateway
+        image: your-registry/entriq
         ports:
         - containerPort: 8080
         volumeMounts:

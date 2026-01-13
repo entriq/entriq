@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"platform-gateway/internal/config"
+	"entriq/internal/config"
 	"strings"
 	"time"
 )

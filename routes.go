@@ -1,7 +1,7 @@
 package main
 
 import (
-	"platform-gateway/internal/gateway"
+	"entriq/internal/gateway"
 
 	"github.com/gin-gonic/gin"
 )

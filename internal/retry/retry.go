@@ -5,7 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
-	"platform-gateway/internal/config"
+	"entriq/internal/config"
 	"time"
 )
 

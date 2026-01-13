@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"net/http"
-	"platform-gateway/internal/config"
+	"entriq/internal/config"
 	"strings"
 )
 

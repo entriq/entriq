@@ -2,12 +2,12 @@ package main
 
 import (
 	"log"
-	middleware "platform-gateway/middlewares"
+	middleware "entriq/middlewares"
 	"reflect"
 	"strings"
 
-	"platform-gateway/internal/config"
-	"platform-gateway/internal/gateway"
+	"entriq/internal/config"
+	"entriq/internal/gateway"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
