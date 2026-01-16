@@ -236,7 +236,3 @@ spec:
         configMap:
           name: entriq-config
 ```
-
-## License
-
-Proprietary
