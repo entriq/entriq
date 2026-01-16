@@ -20,7 +20,7 @@ A high-performance API gateway built with Go and Gin framework that routes reque
 Edit `config/config.yaml` to define your backend services:
 
 ```yaml
-gateway:
+entriq:
   default_timeout: 30s
   default_retry:
     max_attempts: 3
@@ -46,10 +46,10 @@ services:
 
 ```bash
 # Use default config (./config/config.yaml)
-./gateway
+./entriq
 
 # Or specify custom config path
-CONFIG_PATH=/path/to/custom/config.yaml ./gateway
+CONFIG_PATH=/path/to/custom/config.yaml ./entriq
 ```
 
 ### 3. Test the Gateway
@@ -152,7 +152,7 @@ curl https://api.evinta.net/v1.0/transaction
 ### Build
 
 ```bash
-go build -o gateway .
+go build -o entriq .
 ```
 
 ### Run with Make
@@ -193,13 +193,13 @@ entriq/
 FROM golang:1.25-alpine AS builder
 WORKDIR /app
 COPY . .
-RUN go build -o gateway .
+RUN go build -o entriq .
 
 FROM alpine:latest
-COPY --from=builder /app/gateway /gateway
+COPY --from=builder /app/entriq /entriq
 COPY --from=builder /app/config /config
 EXPOSE 8080
-CMD ["/gateway"]
+CMD ["/entriq"]
 ```
 
 ### Kubernetes
@@ -210,7 +210,7 @@ Mount config as ConfigMap:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gateway-config
+  name: entriq-config
 data:
   config.yaml: |
     # Your config here
@@ -225,7 +225,7 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: your-registry/entriq
+        image: ghcr.io/entriq/entriq
         ports:
         - containerPort: 8080
         volumeMounts:
@@ -234,7 +234,7 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: gateway-config
+          name: entriq-config
 ```
 
 ## License
