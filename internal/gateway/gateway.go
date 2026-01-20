@@ -96,7 +96,9 @@ func (g *Gateway) ProxyHandler() gin.HandlerFunc {
 				// Log the auth failure with full context
 				latency := time.Since(startTime)
 				statusCode := c.Writer.Status()
+				requestID := c.Request.Header.Get("X-Request-ID")
 				g.proxyLogger.LogFailure(
+					requestID,
 					c.Request.Method,
 					c.Request.URL.Path,
 					match.Service.Name,

@@ -143,8 +143,12 @@ func (l *ProxyLogger) LogRequest(r *http.Request, serviceName, backend string) s
 		return ""
 	}
 
-	// Generate request ID
-	requestID := uuid.New().String()
+	// Get request ID from X-Request-ID header (set by RequestID middleware)
+	// Fall back to generating new UUID if not present
+	requestID := r.Header.Get("X-Request-ID")
+	if requestID == "" {
+		requestID = uuid.New().String()
+	}
 
 	// Store request context for later retrieval in LogResponse
 	l.requests.Store(requestID, &requestContext{
@@ -214,14 +218,19 @@ func (l *ProxyLogger) LogResponse(requestID, serviceName, backend string, status
 
 // LogFailure logs a request failure (e.g., auth failure) with full context
 // Use this when LogRequest wasn't called but you still need to log the failure
-func (l *ProxyLogger) LogFailure(method, path, serviceName string, statusCode int, latency time.Duration, errMsg string) {
+func (l *ProxyLogger) LogFailure(requestID, method, path, serviceName string, statusCode int, latency time.Duration, errMsg string) {
 	if !l.config.Enabled {
 		return
 	}
 
+	// Use provided request ID, or generate new one if empty
+	if requestID == "" {
+		requestID = uuid.New().String()
+	}
+
 	entry := ProxyLog{
 		Timestamp:   time.Now().Format(time.RFC3339),
-		RequestID:   uuid.New().String(),
+		RequestID:   requestID,
 		Method:      method,
 		Path:        path,
 		ServiceName: serviceName,

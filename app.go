@@ -8,6 +8,7 @@ import (
 
 	"entriq/internal/config"
 	"entriq/internal/gateway"
+	intmiddleware "entriq/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -64,6 +65,13 @@ func main() {
 	 * from any panics and writes a 500 if there was one.
 	 */
 	Router.Use(gin.Recovery())
+
+	/**
+	 * RequestID middleware generates a unique UUID for each request
+	 * and sets it as X-Request-ID header. This flows to all downstream
+	 * services (auth service, backend services) for request tracing.
+	 */
+	Router.Use(intmiddleware.RequestID())
 
 	/**
 	 * We need to return some CORS headers to fix issues with

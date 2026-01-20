@@ -31,6 +31,7 @@ func DefaultForwardAuthConfig() *ForwardAuthConfig {
 		ForwardHeaders: []string{
 			"Authorization",
 			"Cookie",
+			"X-Request-ID",
 			"X-Forwarded-For",
 			"X-Forwarded-Host",
 			"X-Forwarded-Proto",

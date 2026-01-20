@@ -16,6 +16,7 @@ gateway:
     timeout: 5s
     forward_headers:
       - "Authorization"
+      - "X-Request-ID"
     response_headers:
       - "X-User"
     trust_forwarded_headers: true
