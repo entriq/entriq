@@ -12,7 +12,7 @@ gateway:
     idle_conn_timeout: 90s
   forward_auth:
     enabled: true
-    auth_service_url: http://auth-service/v1.0/verify
+    url: http://auth-service/v1.0/verify
     timeout: 5s
     forward_headers:
       - "Authorization"

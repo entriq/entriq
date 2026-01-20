@@ -23,7 +23,7 @@ gateway:
   # Forward authentication (Traefik ForwardAuth style)
   forward_auth:
     enabled: true                        # Enable/disable forward auth globally
-    auth_service_url: http://auth-service:8083/verify  # URL of auth service to verify requests
+    url: http://auth-service:8083/verify  # URL of auth service to verify requests
     timeout: 5s                          # Timeout for auth service requests
     # Headers to forward to auth service (defaults shown - omit to forward all headers)
     forward_headers:

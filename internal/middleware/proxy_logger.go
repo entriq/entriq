@@ -10,14 +10,22 @@ import (
 	"net"
 	"net/http"
 	"entriq/internal/config"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+// requestContext stores request details for later retrieval
+type requestContext struct {
+	Method string
+	Path   string
+}
+
 // ProxyLogger logs requests and responses for proxied traffic
 type ProxyLogger struct {
-	config config.LoggingSettings
+	config   config.LoggingSettings
+	requests sync.Map // map[string]*requestContext - stores request details by ID
 }
 
 // NewProxyLogger creates a new proxy logger
@@ -138,6 +146,12 @@ func (l *ProxyLogger) LogRequest(r *http.Request, serviceName, backend string) s
 	// Generate request ID
 	requestID := uuid.New().String()
 
+	// Store request context for later retrieval in LogResponse
+	l.requests.Store(requestID, &requestContext{
+		Method: r.Method,
+		Path:   r.URL.Path,
+	})
+
 	entry := ProxyLog{
 		Timestamp:   time.Now().Format(time.RFC3339),
 		RequestID:   requestID,
@@ -183,8 +197,37 @@ func (l *ProxyLogger) LogResponse(requestID, serviceName, backend string, status
 		Latency:     latency / time.Millisecond, // Convert to milliseconds
 	}
 
+	// Retrieve request context (method, path) stored during LogRequest
+	if ctx, ok := l.requests.LoadAndDelete(requestID); ok {
+		if reqCtx, ok := ctx.(*requestContext); ok {
+			entry.Method = reqCtx.Method
+			entry.Path = reqCtx.Path
+		}
+	}
+
 	if err != nil {
 		entry.Error = err.Error()
+	}
+
+	l.logJSON(entry)
+}
+
+// LogFailure logs a request failure (e.g., auth failure) with full context
+// Use this when LogRequest wasn't called but you still need to log the failure
+func (l *ProxyLogger) LogFailure(method, path, serviceName string, statusCode int, latency time.Duration, errMsg string) {
+	if !l.config.Enabled {
+		return
+	}
+
+	entry := ProxyLog{
+		Timestamp:   time.Now().Format(time.RFC3339),
+		RequestID:   uuid.New().String(),
+		Method:      method,
+		Path:        path,
+		ServiceName: serviceName,
+		StatusCode:  statusCode,
+		Latency:     latency / time.Millisecond,
+		Error:       errMsg,
 	}
 
 	l.logJSON(entry)

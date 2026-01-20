@@ -33,7 +33,7 @@ type ConnectionPool struct {
 // ForwardAuth configures forward authentication
 type ForwardAuth struct {
 	Enabled               bool          `yaml:"enabled"`
-	AuthServiceURL        string        `yaml:"auth_service_url"`
+	URL                   string        `yaml:"url"`
 	Timeout               time.Duration `yaml:"timeout,omitempty"`
 	ForwardHeaders        []string      `yaml:"forward_headers,omitempty"`
 	ResponseHeaders       []string      `yaml:"response_headers,omitempty"`
@@ -70,8 +70,8 @@ type Route struct {
 
 // RouteForwardAuth contains route-specific forward auth settings
 type RouteForwardAuth struct {
-	Enabled        *bool  `yaml:"enabled,omitempty"`         // nil = use global, true = require auth, false = skip auth
-	AuthServiceURL string `yaml:"auth_service_url,omitempty"` // Override global auth service URL
+	Enabled *bool  `yaml:"enabled,omitempty"` // nil = use global, true = require auth, false = skip auth
+	URL     string `yaml:"url,omitempty"`     // Override global auth service URL
 }
 
 // RouteHeaders contains route-specific header overrides
@@ -181,12 +181,12 @@ func (fa *ForwardAuth) Validate() error {
 		return nil // If disabled, no validation needed
 	}
 
-	if fa.AuthServiceURL == "" {
-		return errors.New("auth_service_url is required when forward_auth is enabled")
+	if fa.URL == "" {
+		return errors.New("url is required when forward_auth is enabled")
 	}
 
-	if !strings.HasPrefix(fa.AuthServiceURL, "http://") && !strings.HasPrefix(fa.AuthServiceURL, "https://") {
-		return errors.New("auth_service_url must start with http:// or https://")
+	if !strings.HasPrefix(fa.URL, "http://") && !strings.HasPrefix(fa.URL, "https://") {
+		return errors.New("url must start with http:// or https://")
 	}
 
 	if fa.Timeout < 0 {
@@ -297,13 +297,13 @@ func (r *Route) IsForwardAuthEnabled(gateway *GatewaySettings) bool {
 // Priority: route override > global setting
 func (r *Route) GetAuthServiceURL(gateway *GatewaySettings) string {
 	// Route-specific override
-	if r.ForwardAuth != nil && r.ForwardAuth.AuthServiceURL != "" {
-		return r.ForwardAuth.AuthServiceURL
+	if r.ForwardAuth != nil && r.ForwardAuth.URL != "" {
+		return r.ForwardAuth.URL
 	}
 
 	// Global setting
 	if gateway.ForwardAuth != nil {
-		return gateway.ForwardAuth.AuthServiceURL
+		return gateway.ForwardAuth.URL
 	}
 
 	return ""

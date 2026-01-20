@@ -13,7 +13,7 @@ import (
 // ForwardAuthConfig holds configuration for forward authentication
 type ForwardAuthConfig struct {
 	// URL of the authentication service
-	AuthServiceURL string
+	URL string
 	// Timeout for auth service requests
 	Timeout time.Duration
 	// Headers to forward to the auth service (defaults to all)
@@ -66,9 +66,19 @@ func ForwardAuth(config *ForwardAuthConfig) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
+		startTime := time.Now()
+
 		// Create auth request
-		authReq, err := http.NewRequest("GET", config.AuthServiceURL, nil)
+		authReq, err := http.NewRequest("GET", config.URL, nil)
 		if err != nil {
+			// Log auth request creation failure
+			fmt.Printf(`{"timestamp":"%s","level":"error","type":"forward_auth_error","method":"%s","path":"%s","auth_service":"%s","error":"failed to create auth request: %v"}`+"\n",
+				time.Now().Format(time.RFC3339),
+				c.Request.Method,
+				c.Request.URL.Path,
+				config.URL,
+				err,
+			)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to create auth request",
 			})
@@ -82,6 +92,16 @@ func ForwardAuth(config *ForwardAuthConfig) gin.HandlerFunc {
 		// Make request to auth service
 		authResp, err := client.Do(authReq)
 		if err != nil {
+			latency := time.Since(startTime)
+			// Log auth service unavailability
+			fmt.Printf(`{"timestamp":"%s","level":"error","type":"forward_auth_error","method":"%s","path":"%s","auth_service":"%s","status_code":502,"latency_ms":%d,"error":"auth service unavailable: %v"}`+"\n",
+				time.Now().Format(time.RFC3339),
+				c.Request.Method,
+				c.Request.URL.Path,
+				config.URL,
+				latency.Milliseconds(),
+				err,
+			)
 			c.JSON(http.StatusBadGateway, gin.H{
 				"error": "Auth service unavailable",
 			})
@@ -98,7 +118,17 @@ func ForwardAuth(config *ForwardAuthConfig) gin.HandlerFunc {
 			return
 		}
 
-		// Auth failed - return auth service response to client
+		// Auth failed - log and return auth service response to client
+		latency := time.Since(startTime)
+		fmt.Printf(`{"timestamp":"%s","level":"warn","type":"forward_auth_failure","method":"%s","path":"%s","auth_service":"%s","status_code":%d,"latency_ms":%d,"error":"authentication failed"}`+"\n",
+			time.Now().Format(time.RFC3339),
+			c.Request.Method,
+			c.Request.URL.Path,
+			config.URL,
+			authResp.StatusCode,
+			latency.Milliseconds(),
+		)
+
 		// Copy status code
 		c.Status(authResp.StatusCode)
 
@@ -112,6 +142,12 @@ func ForwardAuth(config *ForwardAuthConfig) gin.HandlerFunc {
 		// Copy body
 		body, err := io.ReadAll(authResp.Body)
 		if err != nil {
+			fmt.Printf(`{"timestamp":"%s","level":"error","type":"forward_auth_error","method":"%s","path":"%s","error":"failed to read auth response: %v"}`+"\n",
+				time.Now().Format(time.RFC3339),
+				c.Request.Method,
+				c.Request.URL.Path,
+				err,
+			)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to read auth response",
 			})
@@ -233,11 +269,11 @@ func ValidateForwardAuthConfig(config *ForwardAuthConfig) error {
 		return fmt.Errorf("forward auth config cannot be nil")
 	}
 
-	if config.AuthServiceURL == "" {
+	if config.URL == "" {
 		return fmt.Errorf("auth service URL is required")
 	}
 
-	if !strings.HasPrefix(config.AuthServiceURL, "http://") && !strings.HasPrefix(config.AuthServiceURL, "https://") {
+	if !strings.HasPrefix(config.URL, "http://") && !strings.HasPrefix(config.URL, "https://") {
 		return fmt.Errorf("auth service URL must start with http:// or https://")
 	}
 

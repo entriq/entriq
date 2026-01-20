@@ -91,8 +91,19 @@ func (g *Gateway) ProxyHandler() gin.HandlerFunc {
 			authMiddleware := middleware.ForwardAuth(authConfig)
 			authMiddleware(c)
 
-			// If auth middleware aborted the request, stop here
+			// If auth middleware aborted the request, log and stop here
 			if c.IsAborted() {
+				// Log the auth failure with full context
+				latency := time.Since(startTime)
+				statusCode := c.Writer.Status()
+				g.proxyLogger.LogFailure(
+					c.Request.Method,
+					c.Request.URL.Path,
+					match.Service.Name,
+					statusCode,
+					latency,
+					"forward auth failed",
+				)
 				return
 			}
 		}
@@ -140,7 +151,7 @@ func (g *Gateway) GetStats() map[string]interface{} {
 // buildForwardAuthConfig creates a ForwardAuthConfig from the gateway configuration
 func (g *Gateway) buildForwardAuthConfig(authURL string) *middleware.ForwardAuthConfig {
 	config := middleware.DefaultForwardAuthConfig()
-	config.AuthServiceURL = authURL
+	config.URL = authURL
 
 	// Apply global forward auth settings if configured
 	if g.config.Gateway.ForwardAuth != nil {
