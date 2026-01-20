@@ -9,7 +9,7 @@ import (
 
 const (
 	// DefaultConfigPath is the default configuration file path
-	DefaultConfigPath = "./config/config.yaml"
+	DefaultConfigPath = "./config/entriq.yaml"
 	// ConfigPathEnvVar is the environment variable name for config path override
 	ConfigPathEnvVar = "CONFIG_PATH"
 )

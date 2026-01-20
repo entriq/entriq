@@ -26,7 +26,7 @@ func main() {
 
 	/**
 	 * Load gateway configuration from file
-	 * Checks CONFIG_PATH env var, defaults to ./config/config.yaml
+	 * Checks CONFIG_PATH env var, defaults to ./config/entriq.yaml
 	 */
 	gatewayConfig, err := config.Load()
 	if err != nil {

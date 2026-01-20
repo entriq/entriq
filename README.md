@@ -17,7 +17,7 @@ A high-performance API gateway built with Go and Gin framework that routes reque
 
 ### 1. Configure Services
 
-Edit `config/config.yaml` to define your backend services:
+Edit `config/entriq.yaml` to define your backend services:
 
 ```yaml
 entriq:
@@ -45,11 +45,11 @@ services:
 ### 2. Run the Gateway
 
 ```bash
-# Use default config (./config/config.yaml)
+# Use default config (./config/entriq.yaml)
 ./entriq
 
 # Or specify custom config path
-CONFIG_PATH=/path/to/custom/config.yaml ./entriq
+CONFIG_PATH=/path/to/custom/entriq.yaml ./entriq
 ```
 
 ### 3. Test the Gateway
@@ -68,11 +68,11 @@ curl http://localhost:8080/v1.0/transaction
 
 ### Environment Variables
 
-- `CONFIG_PATH`: Path to config file (default: `./config/config.yaml`)
+- `CONFIG_PATH`: Path to config file (default: `./config/entriq.yaml`)
 
 ### Config Structure
 
-See `config/config.example.yaml` for a complete configuration reference with all options documented.
+See `config/entriq.example.yaml` for a complete configuration reference with all options documented.
 
 #### Key Sections:
 
@@ -166,8 +166,8 @@ make run
 ```
 entriq/
 ├── config/                      # Configuration files
-│   ├── config.yaml              # Active config
-│   └── config.example.yaml      # Example with docs
+│   ├── entriq.yaml              # Active config
+│   └── entriq.example.yaml      # Example with docs
 ├── internal/
 │   ├── config/                  # Config loading & validation
 │   ├── gateway/                 # Router & proxy logic
@@ -212,7 +212,7 @@ kind: ConfigMap
 metadata:
   name: entriq-config
 data:
-  config.yaml: |
+  entriq.yaml: |
     # Your config here
 
 ---

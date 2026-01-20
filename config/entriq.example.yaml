@@ -1,5 +1,5 @@
 # Gateway Configuration Example
-# Copy this file to config.yaml and customize for your environment
+# Copy this file to entriq.yaml and customize for your environment
 
 # Gateway global settings
 gateway:
