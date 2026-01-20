@@ -20,6 +20,28 @@ gateway:
     max_idle_conns_per_host: 10         # Maximum idle connections per host
     idle_conn_timeout: 90s              # How long idle connections are kept
 
+  # Forward authentication (Traefik ForwardAuth style)
+  forward_auth:
+    enabled: true                        # Enable/disable forward auth globally
+    auth_service_url: http://auth-service:8083/verify  # URL of auth service to verify requests
+    timeout: 5s                          # Timeout for auth service requests
+    # Headers to forward to auth service (defaults shown - omit to forward all headers)
+    forward_headers:
+      - "Authorization"
+      - "Cookie"
+      - "X-Forwarded-For"
+      - "X-Forwarded-Host"
+      - "X-Forwarded-Proto"
+      - "X-Forwarded-Uri"
+    # Headers to copy from auth response to backend request
+    response_headers:
+      - "X-Forwarded-User"
+      - "X-Auth-User"
+      - "X-Auth-Email"
+      - "X-Auth-Name"
+      - "X-Auth-Groups"
+    trust_forwarded_headers: true        # Automatically add X-Forwarded-* headers
+
 # Header manipulation rules (applied to all proxied requests)
 headers:
   # Headers to add to all requests
@@ -63,6 +85,7 @@ services:
         method: ["GET", "POST", "PUT", "DELETE"]
         match_type: prefix
         strip_path: false                # If true, "/users/123" becomes "/123" when forwarding
+        # Forward auth inherits from global setting (enabled: true)
 
       # Exact match: only /users/bulk matches
       - path: /users/bulk
@@ -72,6 +95,9 @@ services:
         headers:
           add:
             X-Operation: "bulk-import"   # Route-specific headers
+        # Disable auth for this specific route
+        forward_auth:
+          enabled: false
 
   # Example transaction service
   - name: transaction-service
@@ -87,15 +113,29 @@ services:
     base_url: http://auth-service:8083
     timeout: 5s
     routes:
+      # Login endpoint - no auth required
       - path: /auth/login
         method: ["POST"]
         match_type: exact
+        forward_auth:
+          enabled: false                 # Public endpoint, no auth needed
+
+      # Logout endpoint - auth required (inherits from global)
       - path: /auth/logout
         method: ["POST"]
         match_type: exact
+
+      # Token refresh endpoint - auth required (inherits from global)
       - path: /auth/refresh
         method: ["POST"]
         match_type: exact
+
+      # Verify endpoint - this is the actual forward auth endpoint
+      - path: /auth/verify
+        method: ["GET", "POST"]
+        match_type: exact
+        forward_auth:
+          enabled: false                 # Don't auth the auth endpoint itself!
 
 # Logging configuration for proxied requests
 logging:

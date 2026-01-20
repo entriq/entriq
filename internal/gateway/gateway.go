@@ -73,6 +73,30 @@ func (g *Gateway) ProxyHandler() gin.HandlerFunc {
 			return
 		}
 
+		// Check if forward auth is enabled for this route
+		if match.Route.IsForwardAuthEnabled(&g.config.Gateway) {
+			// Get auth service URL
+			authURL := match.Route.GetAuthServiceURL(&g.config.Gateway)
+			if authURL == "" {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Forward auth enabled but no auth service URL configured",
+				})
+				return
+			}
+
+			// Build forward auth config
+			authConfig := g.buildForwardAuthConfig(authURL)
+
+			// Create and execute forward auth middleware
+			authMiddleware := middleware.ForwardAuth(authConfig)
+			authMiddleware(c)
+
+			// If auth middleware aborted the request, stop here
+			if c.IsAborted() {
+				return
+			}
+		}
+
 		// Get client IP
 		clientIP := middleware.GetClientIP(c.Request)
 
@@ -111,4 +135,31 @@ func (g *Gateway) GetStats() map[string]interface{} {
 	stats := g.router.GetStats()
 	stats["services"] = len(g.config.Services)
 	return stats
+}
+
+// buildForwardAuthConfig creates a ForwardAuthConfig from the gateway configuration
+func (g *Gateway) buildForwardAuthConfig(authURL string) *middleware.ForwardAuthConfig {
+	config := middleware.DefaultForwardAuthConfig()
+	config.AuthServiceURL = authURL
+
+	// Apply global forward auth settings if configured
+	if g.config.Gateway.ForwardAuth != nil {
+		fa := g.config.Gateway.ForwardAuth
+
+		if fa.Timeout > 0 {
+			config.Timeout = fa.Timeout
+		}
+
+		if len(fa.ForwardHeaders) > 0 {
+			config.ForwardHeaders = fa.ForwardHeaders
+		}
+
+		if len(fa.ResponseHeaders) > 0 {
+			config.ResponseHeaders = fa.ResponseHeaders
+		}
+
+		config.TrustForwardedHeaders = fa.TrustForwardedHeaders
+	}
+
+	return config
 }

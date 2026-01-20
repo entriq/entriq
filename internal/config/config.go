@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type GatewaySettings struct {
 	DefaultTimeout time.Duration  `yaml:"default_timeout"`
 	DefaultRetry   RetryPolicy    `yaml:"default_retry"`
 	ConnectionPool ConnectionPool `yaml:"connection_pool"`
+	ForwardAuth    *ForwardAuth   `yaml:"forward_auth,omitempty"`
 }
 
 // ConnectionPool configures HTTP connection pooling
@@ -26,6 +28,16 @@ type ConnectionPool struct {
 	MaxIdleConns        int           `yaml:"max_idle_conns"`
 	MaxIdleConnsPerHost int           `yaml:"max_idle_conns_per_host"`
 	IdleConnTimeout     time.Duration `yaml:"idle_conn_timeout"`
+}
+
+// ForwardAuth configures forward authentication
+type ForwardAuth struct {
+	Enabled               bool          `yaml:"enabled"`
+	AuthServiceURL        string        `yaml:"auth_service_url"`
+	Timeout               time.Duration `yaml:"timeout,omitempty"`
+	ForwardHeaders        []string      `yaml:"forward_headers,omitempty"`
+	ResponseHeaders       []string      `yaml:"response_headers,omitempty"`
+	TrustForwardedHeaders bool          `yaml:"trust_forwarded_headers"`
 }
 
 // HeaderSettings configures header manipulation
@@ -47,12 +59,19 @@ type Service struct {
 
 // Route represents a routing rule
 type Route struct {
-	Path      string        `yaml:"path"`
-	Method    []string      `yaml:"method,omitempty"`
-	MatchType string        `yaml:"match_type"` // "prefix" or "exact"
-	StripPath bool          `yaml:"strip_path"`
-	Timeout   time.Duration `yaml:"timeout,omitempty"`
-	Headers   *RouteHeaders `yaml:"headers,omitempty"`
+	Path        string             `yaml:"path"`
+	Method      []string           `yaml:"method,omitempty"`
+	MatchType   string             `yaml:"match_type"` // "prefix" or "exact"
+	StripPath   bool               `yaml:"strip_path"`
+	Timeout     time.Duration      `yaml:"timeout,omitempty"`
+	Headers     *RouteHeaders      `yaml:"headers,omitempty"`
+	ForwardAuth *RouteForwardAuth  `yaml:"forward_auth,omitempty"`
+}
+
+// RouteForwardAuth contains route-specific forward auth settings
+type RouteForwardAuth struct {
+	Enabled        *bool  `yaml:"enabled,omitempty"`         // nil = use global, true = require auth, false = skip auth
+	AuthServiceURL string `yaml:"auth_service_url,omitempty"` // Override global auth service URL
 }
 
 // RouteHeaders contains route-specific header overrides
@@ -91,6 +110,13 @@ func (c *GatewayConfig) Validate() error {
 
 	if err := c.Gateway.ConnectionPool.Validate(); err != nil {
 		return fmt.Errorf("gateway.connection_pool: %w", err)
+	}
+
+	// Validate forward auth if configured
+	if c.Gateway.ForwardAuth != nil {
+		if err := c.Gateway.ForwardAuth.Validate(); err != nil {
+			return fmt.Errorf("gateway.forward_auth: %w", err)
+		}
 	}
 
 	// Validate services
@@ -146,6 +172,32 @@ func (cp *ConnectionPool) Validate() error {
 	if cp.IdleConnTimeout < 0 {
 		return errors.New("idle_conn_timeout must be >= 0")
 	}
+	return nil
+}
+
+// Validate validates the forward auth settings
+func (fa *ForwardAuth) Validate() error {
+	if !fa.Enabled {
+		return nil // If disabled, no validation needed
+	}
+
+	if fa.AuthServiceURL == "" {
+		return errors.New("auth_service_url is required when forward_auth is enabled")
+	}
+
+	if !strings.HasPrefix(fa.AuthServiceURL, "http://") && !strings.HasPrefix(fa.AuthServiceURL, "https://") {
+		return errors.New("auth_service_url must start with http:// or https://")
+	}
+
+	if fa.Timeout < 0 {
+		return errors.New("timeout must be >= 0")
+	}
+
+	// Set default timeout if not specified
+	if fa.Timeout == 0 {
+		fa.Timeout = 5 * time.Second
+	}
+
 	return nil
 }
 
@@ -222,4 +274,37 @@ func (s *Service) GetRetryPolicy(gateway *GatewaySettings) RetryPolicy {
 		return *s.Retry
 	}
 	return gateway.DefaultRetry
+}
+
+// IsForwardAuthEnabled returns true if forward auth is enabled for this route
+// Priority: route setting > global setting
+func (r *Route) IsForwardAuthEnabled(gateway *GatewaySettings) bool {
+	// Route-specific override takes precedence
+	if r.ForwardAuth != nil && r.ForwardAuth.Enabled != nil {
+		return *r.ForwardAuth.Enabled
+	}
+
+	// Fall back to global setting
+	if gateway.ForwardAuth != nil {
+		return gateway.ForwardAuth.Enabled
+	}
+
+	// Default: no auth
+	return false
+}
+
+// GetAuthServiceURL returns the auth service URL for this route
+// Priority: route override > global setting
+func (r *Route) GetAuthServiceURL(gateway *GatewaySettings) string {
+	// Route-specific override
+	if r.ForwardAuth != nil && r.ForwardAuth.AuthServiceURL != "" {
+		return r.ForwardAuth.AuthServiceURL
+	}
+
+	// Global setting
+	if gateway.ForwardAuth != nil {
+		return gateway.ForwardAuth.AuthServiceURL
+	}
+
+	return ""
 }
