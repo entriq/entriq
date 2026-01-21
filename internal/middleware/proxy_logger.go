@@ -49,10 +49,11 @@ type ProxyLog struct {
 	RequestBody string        `json:"request_body,omitempty"`
 }
 
-// responseWriter wraps http.ResponseWriter to capture status code
+// responseWriter wraps http.ResponseWriter to capture status code and size
 type responseWriter struct {
 	http.ResponseWriter
 	StatusCode int
+	size       int
 	written    bool
 }
 
@@ -78,7 +79,9 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	if !rw.written {
 		rw.written = true
 	}
-	return rw.ResponseWriter.Write(b)
+	n, err := rw.ResponseWriter.Write(b)
+	rw.size += n
+	return n, err
 }
 
 // CloseNotify implements gin.ResponseWriter
@@ -93,7 +96,7 @@ func (rw *responseWriter) Status() int {
 
 // Size implements gin.ResponseWriter
 func (rw *responseWriter) Size() int {
-	return 0
+	return rw.size
 }
 
 // WriteString implements gin.ResponseWriter
