@@ -12,7 +12,7 @@ gateway:
     idle_conn_timeout: 90s
   forward_auth:
     enabled: true
-    url: http://auth-service/v1.0/verify
+    url: http://localhost:8090/v1.0/verify
     timeout: 5s
     forward_headers:
       - "Authorization"
@@ -45,35 +45,13 @@ logging:
     - service_name
 
 services:
-  - name: auth-service
-    base_url: http://auth-service
-    timeout: 5s
-    routes:
-      - path: /v1.0/auth/login
-        method: ["POST"]
-        match_type: exact
-        strip_path: false
-        forward_auth:
-          enabled: false
-      - path: /v1.0/auth/register
-        method: ["POST"]
-        match_type: exact
-        strip_path: false
-        forward_auth:
-          enabled: false
-      - path: /v1.0/verify
-        method: ["GET", "POST"]
-        match_type: exact
-        strip_path: false
-        forward_auth:
-          enabled: false
 
-  - name: example-service
-    base_url: http://localhost:8081
+  - name: platform-core
+    base_url: http://localhost:8040
     timeout: 10s
     routes:
-      - path: /example
-        method: ["GET"]
+      - path: /v1.0
+        method: ["GET", "POST"]
         match_type: prefix
         strip_path: false
 

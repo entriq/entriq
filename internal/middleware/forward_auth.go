@@ -87,8 +87,27 @@ func ForwardAuth(config *ForwardAuthConfig) gin.HandlerFunc {
 			return
 		}
 
+		// Debug: Log what we RECEIVED from client
+		fmt.Printf(`{"timestamp":"%s","level":"debug","type":"forward_auth_incoming","method":"%s","path":"%s","client_auth_header":"%s","client_request_id":"%s"}`+"\n",
+			time.Now().Format(time.RFC3339),
+			c.Request.Method,
+			c.Request.URL.Path,
+			c.Request.Header.Get("Authorization"),
+			c.Request.Header.Get("X-Request-ID"),
+		)
+
 		// Forward headers to auth service
 		forwardHeaders(c.Request, authReq, config)
+
+		// Debug: Log what we're sending to auth service
+		fmt.Printf(`{"timestamp":"%s","level":"debug","type":"forward_auth_request","method":"%s","path":"%s","auth_service":"%s","auth_headers":{"Authorization":"%s","X-Request-ID":"%s"}}`+"\n",
+			time.Now().Format(time.RFC3339),
+			c.Request.Method,
+			c.Request.URL.Path,
+			config.URL,
+			authReq.Header.Get("Authorization"),
+			authReq.Header.Get("X-Request-ID"),
+		)
 
 		// Make request to auth service
 		authResp, err := client.Do(authReq)

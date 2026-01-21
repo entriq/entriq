@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"entriq/internal/config"
 	"entriq/internal/middleware"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,9 @@ type Gateway struct {
 	transport         *http.Transport
 	headerManipulator *middleware.HeaderManipulator
 	proxyLogger       *middleware.ProxyLogger
+	// Cache of forward auth middleware instances by config signature
+	authMiddlewareCache map[string]gin.HandlerFunc
+	authMiddlewareMutex sync.RWMutex
 }
 
 // New creates a new gateway instance
@@ -39,11 +43,12 @@ func New(cfg *config.GatewayConfig) (*Gateway, error) {
 	proxyLogger := middleware.NewProxyLogger(cfg.Logging)
 
 	gateway := &Gateway{
-		config:            cfg,
-		router:            router,
-		transport:         transport,
-		headerManipulator: headerManipulator,
-		proxyLogger:       proxyLogger,
+		config:              cfg,
+		router:              router,
+		transport:           transport,
+		headerManipulator:   headerManipulator,
+		proxyLogger:         proxyLogger,
+		authMiddlewareCache: make(map[string]gin.HandlerFunc),
 	}
 
 	log.Printf("Gateway initialized with %d services", len(cfg.Services))
@@ -84,11 +89,8 @@ func (g *Gateway) ProxyHandler() gin.HandlerFunc {
 				return
 			}
 
-			// Build forward auth config
-			authConfig := g.buildForwardAuthConfig(authURL)
-
-			// Create and execute forward auth middleware
-			authMiddleware := middleware.ForwardAuth(authConfig)
+			// Get or create cached forward auth middleware
+			authMiddleware := g.getOrCreateAuthMiddleware(authURL)
 			authMiddleware(c)
 
 			// If auth middleware aborted the request, log and stop here
@@ -175,4 +177,33 @@ func (g *Gateway) buildForwardAuthConfig(authURL string) *middleware.ForwardAuth
 	}
 
 	return config
+}
+
+// getOrCreateAuthMiddleware retrieves or creates a forward auth middleware instance
+// Middlewares are cached by auth URL to avoid creating new HTTP clients per request
+func (g *Gateway) getOrCreateAuthMiddleware(authURL string) gin.HandlerFunc {
+	// Try read lock first (fast path for existing middlewares)
+	g.authMiddlewareMutex.RLock()
+	if mw, exists := g.authMiddlewareCache[authURL]; exists {
+		g.authMiddlewareMutex.RUnlock()
+		return mw
+	}
+	g.authMiddlewareMutex.RUnlock()
+
+	// Need to create new middleware - acquire write lock
+	g.authMiddlewareMutex.Lock()
+	defer g.authMiddlewareMutex.Unlock()
+
+	// Double-check after acquiring write lock (another goroutine might have created it)
+	if mw, exists := g.authMiddlewareCache[authURL]; exists {
+		return mw
+	}
+
+	// Create new middleware instance
+	authConfig := g.buildForwardAuthConfig(authURL)
+	mw := middleware.ForwardAuth(authConfig)
+	g.authMiddlewareCache[authURL] = mw
+
+	log.Printf("Created forward auth middleware for URL: %s", authURL)
+	return mw
 }
