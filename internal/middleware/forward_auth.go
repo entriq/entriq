@@ -92,7 +92,7 @@ func ForwardAuth(config *ForwardAuthConfig) gin.HandlerFunc {
 			time.Now().Format(time.RFC3339),
 			c.Request.Method,
 			c.Request.URL.Path,
-			c.Request.Header.Get("Authorization"),
+			redactHeader(c.Request.Header, "Authorization"),
 			c.Request.Header.Get("X-Request-ID"),
 		)
 
@@ -105,7 +105,7 @@ func ForwardAuth(config *ForwardAuthConfig) gin.HandlerFunc {
 			c.Request.Method,
 			c.Request.URL.Path,
 			config.URL,
-			authReq.Header.Get("Authorization"),
+			redactHeader(authReq.Header, "Authorization"),
 			authReq.Header.Get("X-Request-ID"),
 		)
 
@@ -281,6 +281,25 @@ func getClientIP(req *http.Request) string {
 	}
 
 	return req.RemoteAddr
+}
+
+// sensitiveHeaders is the set of headers that must never appear in logs
+var sensitiveHeaders = map[string]struct{}{
+	"authorization": {},
+	"cookie":        {},
+	"set-cookie":    {},
+	"x-api-key":     {},
+}
+
+// redactHeader returns the header value or "[REDACTED]" if it is sensitive
+func redactHeader(h http.Header, name string) string {
+	if _, sensitive := sensitiveHeaders[strings.ToLower(name)]; sensitive {
+		if h.Get(name) != "" {
+			return "[REDACTED]"
+		}
+		return ""
+	}
+	return h.Get(name)
 }
 
 // ValidateForwardAuthConfig validates the forward auth configuration
