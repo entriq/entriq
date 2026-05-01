@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	middleware "entriq/middlewares"
 	"reflect"
 	"strings"
@@ -18,12 +19,15 @@ import (
 func main() {
 
 	/**
-	* We have to define the operation for go/gin router
-	* to work. By default we'll use the debug mode and
-	* this will changed to release mode on the production
-	* environments.
+	 * Set gin mode from GIN_MODE environment variable.
+	 * Defaults to release mode for safe production deployments.
+	 * Set GIN_MODE=debug locally for verbose output.
 	 */
-	gin.SetMode(gin.DebugMode)
+	ginMode := os.Getenv("GIN_MODE")
+	if ginMode == "" {
+		ginMode = gin.ReleaseMode
+	}
+	gin.SetMode(ginMode)
 
 	/**
 	 * Load gateway configuration from file
