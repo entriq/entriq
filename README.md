@@ -20,8 +20,8 @@ A high-performance API gateway built with Go and Gin framework that routes reque
 Edit `config/entriq.yaml` to define your backend services:
 
 ```yaml
-entriq:
-  default_timeout: 30s
+global:
+  timeout: 30s
   default_retry:
     max_attempts: 3
     backoff: exponential
@@ -33,13 +33,11 @@ services:
     base_url: http://user-service:8081
     routes:
       - path: /users
-        match_type: prefix
 
   - name: transaction-service
     base_url: http://transaction-service:8082
     routes:
       - path: /v1.0/transaction
-        match_type: prefix
 ```
 
 ### 2. Run the Gateway
@@ -76,8 +74,8 @@ See `config/entriq.example.yaml` for a complete configuration reference with all
 
 #### Key Sections:
 
-**Gateway Settings**:
-- `default_timeout`: Timeout for all services
+**Global Settings**:
+- `timeout`: Timeout for all services
 - `default_retry`: Retry policy (max attempts, backoff strategy)
 - `connection_pool`: HTTP connection pool settings
 

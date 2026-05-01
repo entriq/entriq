@@ -36,7 +36,7 @@ func (p *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Determine effective timeout
-	timeout := p.match.Route.GetTimeout(p.match.Service, &p.config.Gateway)
+	timeout := p.match.Route.GetTimeout(p.match.Service, &p.config.Global)
 
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(r.Context(), timeout)
