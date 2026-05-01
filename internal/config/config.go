@@ -13,6 +13,41 @@ type GatewayConfig struct {
 	Headers  HeaderSettings   `yaml:"headers"`
 	Services []Service        `yaml:"services"`
 	Logging  LoggingSettings  `yaml:"logging"`
+	CORS     CORSSettings     `yaml:"cors"`
+}
+
+// Gateway defaults
+const (
+	DefaultTimeout             = 30 * time.Second
+	DefaultRetryMaxAttempts    = 3
+	DefaultRetryBackoff        = "exponential"
+	DefaultRetryInitialInterval = 100 * time.Millisecond
+	DefaultRetryMaxInterval    = 2 * time.Second
+	DefaultRetryMultiplier     = 2.0
+	DefaultMaxIdleConns        = 100
+	DefaultMaxIdleConnsPerHost = 10
+	DefaultIdleConnTimeout     = 90 * time.Second
+	DefaultLogLevel            = "info"
+	DefaultMaxBodySize         = 1024
+	DefaultRouteMatchType      = "prefix"
+)
+
+// Default slice values (vars, not consts, because slices can't be const)
+var (
+	DefaultRouteAllowedMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+	DefaultCORSOrigins         = []string{"*"}
+	DefaultCORSMethods         = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+	DefaultCORSHeaders         = []string{"Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "X-Request-ID"}
+	DefaultCORSExposed         = []string{"Content-Length"}
+)
+
+// CORSSettings configures Cross-Origin Resource Sharing
+type CORSSettings struct {
+	Origins          []string `yaml:"origins"`
+	Methods          []string `yaml:"methods"`
+	Headers          []string `yaml:"headers"`
+	ExposedHeaders   []string `yaml:"exposed_headers"`
+	AllowCredentials bool     `yaml:"allow_credentials"`
 }
 
 // GatewaySettings contains global gateway settings
