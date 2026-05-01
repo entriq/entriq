@@ -138,6 +138,43 @@ services:
         forward_auth:
           enabled: false                 # Don't auth the auth endpoint itself!
 
+# CORS configuration
+cors:
+  # Explicit list of allowed origins — no wildcards permitted.
+  # Add every origin that your frontend is served from.
+  allowed_origins:
+    - "https://app.example.com"
+    - "https://admin.example.com"
+    # - "http://localhost:3000"   # uncomment for local development
+
+  # HTTP methods browsers are allowed to use cross-origin
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "PATCH"
+    - "HEAD"
+    - "OPTIONS"
+
+  # Headers browsers are allowed to send cross-origin
+  allowed_headers:
+    - "Origin"
+    - "Content-Type"
+    - "Content-Length"
+    - "Accept-Encoding"
+    - "X-CSRF-Token"
+    - "Authorization"
+    - "X-Request-ID"
+
+  # Headers browsers are allowed to read from the response
+  exposed_headers:
+    - "Content-Length"
+
+  # Set to true only if your frontend sends cookies or uses HTTP auth.
+  # When true, allowed_origins must NOT contain a wildcard.
+  allow_credentials: false
+
 # Logging configuration for proxied requests
 logging:
   enabled: true

@@ -13,6 +13,16 @@ type GatewayConfig struct {
 	Headers  HeaderSettings   `yaml:"headers"`
 	Services []Service        `yaml:"services"`
 	Logging  LoggingSettings  `yaml:"logging"`
+	CORS     CORSSettings     `yaml:"cors"`
+}
+
+// CORSSettings configures Cross-Origin Resource Sharing
+type CORSSettings struct {
+	AllowedOrigins   []string `yaml:"allowed_origins"`
+	AllowedMethods   []string `yaml:"allowed_methods"`
+	AllowedHeaders   []string `yaml:"allowed_headers"`
+	ExposedHeaders   []string `yaml:"exposed_headers"`
+	AllowCredentials bool     `yaml:"allow_credentials"`
 }
 
 // GatewaySettings contains global gateway settings

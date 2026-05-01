@@ -86,6 +86,20 @@ func MergeDefaults(cfg *GatewayConfig) {
 		cfg.Gateway.ConnectionPool.IdleConnTimeout = 90000000000 // 90s in nanoseconds
 	}
 
+	// CORS defaults
+	if len(cfg.CORS.AllowedOrigins) == 0 {
+		cfg.CORS.AllowedOrigins = []string{}
+	}
+	if len(cfg.CORS.AllowedMethods) == 0 {
+		cfg.CORS.AllowedMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+	}
+	if len(cfg.CORS.AllowedHeaders) == 0 {
+		cfg.CORS.AllowedHeaders = []string{"Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "X-Request-ID"}
+	}
+	if len(cfg.CORS.ExposedHeaders) == 0 {
+		cfg.CORS.ExposedHeaders = []string{"Content-Length"}
+	}
+
 	// Logging defaults
 	if cfg.Logging.Level == "" {
 		cfg.Logging.Level = "info"

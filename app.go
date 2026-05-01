@@ -77,7 +77,7 @@ func main() {
 	 * We need to return some CORS headers to fix issues with
 	 * cross browser requests things.
 	 */
-	Router.Use(middleware.CORS())
+	Router.Use(middleware.CORS(gatewayConfig.CORS))
 
 	/**
 	* Extend the capabilities of the Validator engine to return
