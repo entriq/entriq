@@ -93,7 +93,7 @@ type HeaderSettings struct {
 // Service represents a backend microservice
 type Service struct {
 	Name    string       `yaml:"name"`
-	BaseURL string       `yaml:"base_url"`
+	URL     string       `yaml:"url"`
 	Timeout time.Duration `yaml:"timeout,omitempty"`
 	Retry   *RetryPolicy `yaml:"retry,omitempty"`
 	Routes  []Route      `yaml:"routes"`
@@ -177,8 +177,8 @@ func (c *GatewayConfig) Validate() error {
 		}
 		serviceNames[service.Name] = true
 
-		if service.BaseURL == "" {
-			return fmt.Errorf("services[%d] (%s): base_url is required", i, service.Name)
+		if service.URL == "" {
+			return fmt.Errorf("services[%d] (%s): url is required", i, service.Name)
 		}
 
 		if len(service.Routes) == 0 {

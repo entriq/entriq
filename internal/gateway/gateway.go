@@ -120,7 +120,7 @@ func (g *Gateway) ProxyHandler() gin.HandlerFunc {
 		g.headerManipulator.Apply(c.Request, routeHeaders, clientIP)
 
 		// Log request start
-		requestID := g.proxyLogger.LogRequest(c.Request, match.Service.Name, match.Service.BaseURL)
+		requestID := g.proxyLogger.LogRequest(c.Request, match.Service.Name, match.Service.URL)
 
 		// Wrap response writer to capture status code
 		wrappedWriter := g.proxyLogger.WrapResponseWriter(c.Writer)
@@ -136,7 +136,7 @@ func (g *Gateway) ProxyHandler() gin.HandlerFunc {
 		latency := time.Since(startTime)
 
 		// Log response
-		g.proxyLogger.LogResponse(requestID, match.Service.Name, match.Service.BaseURL, wrappedWriter.StatusCode, latency, nil)
+		g.proxyLogger.LogResponse(requestID, match.Service.Name, match.Service.URL, wrappedWriter.StatusCode, latency, nil)
 	}
 }
 

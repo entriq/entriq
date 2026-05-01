@@ -13,7 +13,7 @@ global:
 services:
 
   - name: platform-core
-    base_url: http://localhost:8040
+    url: http://localhost:8040
     timeout: 10s
     routes:
       - path: /v1.0
