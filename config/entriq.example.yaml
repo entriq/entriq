@@ -140,15 +140,18 @@ services:
 
 # CORS configuration
 cors:
-  # Explicit list of allowed origins — no wildcards permitted.
-  # Add every origin that your frontend is served from.
-  allowed_origins:
+  # Allowlist of origins. Defaults to "*" (all origins) if omitted.
+  # Override with explicit origins in production to restrict access.
+  # Use "*" to allow all origins (public APIs only — not recommended with credentials).
+  origins:
     - "https://app.example.com"
     - "https://admin.example.com"
     # - "http://localhost:3000"   # uncomment for local development
+    # - "*"                       # allow all origins (default)
 
-  # HTTP methods browsers are allowed to use cross-origin
-  allowed_methods:
+  # HTTP methods browsers are allowed to use cross-origin.
+  # Optional — defaults to: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
+  methods:
     - "GET"
     - "POST"
     - "PUT"
@@ -157,8 +160,10 @@ cors:
     - "HEAD"
     - "OPTIONS"
 
-  # Headers browsers are allowed to send cross-origin
-  allowed_headers:
+  # Request headers browsers are allowed to send cross-origin.
+  # Optional — defaults to: Origin, Content-Type, Content-Length,
+  #            Accept-Encoding, X-CSRF-Token, Authorization, X-Request-ID
+  headers:
     - "Origin"
     - "Content-Type"
     - "Content-Length"
@@ -167,12 +172,14 @@ cors:
     - "Authorization"
     - "X-Request-ID"
 
-  # Headers browsers are allowed to read from the response
+  # Response headers that JavaScript in the browser is allowed to read.
+  # Optional — defaults to: Content-Length
   exposed_headers:
     - "Content-Length"
 
-  # Set to true only if your frontend sends cookies or uses HTTP auth.
-  # When true, allowed_origins must NOT contain a wildcard.
+  # Allow browsers to send cookies and HTTP auth headers cross-origin.
+  # When true, origins must be explicit — wildcards are rejected by browsers.
+  # Optional — defaults to false
   allow_credentials: false
 
 # Logging configuration for proxied requests

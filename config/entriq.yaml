@@ -31,29 +31,6 @@ headers:
   remove: []
   x_forwarded_headers: true
 
-cors:
-  allowed_origins:
-    - "http://localhost:3000"
-  allowed_methods:
-    - "GET"
-    - "POST"
-    - "PUT"
-    - "DELETE"
-    - "PATCH"
-    - "HEAD"
-    - "OPTIONS"
-  allowed_headers:
-    - "Origin"
-    - "Content-Type"
-    - "Content-Length"
-    - "Accept-Encoding"
-    - "X-CSRF-Token"
-    - "Authorization"
-    - "X-Request-ID"
-  exposed_headers:
-    - "Content-Length"
-  allow_credentials: false
-
 logging:
   enabled: true
   level: info
