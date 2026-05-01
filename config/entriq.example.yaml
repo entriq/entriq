@@ -182,19 +182,20 @@ cors:
   # Optional — defaults to false
   allow_credentials: false
 
-# Logging configuration for proxied requests
+# Logging configuration for proxied requests (all fields optional)
 logging:
-  enabled: true
-  level: info                            # Log level: debug, info, warn, error
-  log_body: false                        # Include request/response bodies in logs
-  max_body_size: 1024                    # Maximum body size to log (bytes)
+  enabled: false      # Default: false
+  level: info         # Default: info — options: debug, info, warn, error
+  log_body: false     # Default: false — include request/response bodies in logs
+  max_body_size: 1024 # Default: 1024 bytes
 
   # Fields to include in logs
+  # Default: timestamp, method, path, status_code, latency, service
   include:
     - timestamp
     - method
     - path
     - status_code
     - latency
-    - service_name
+    - service
     - error

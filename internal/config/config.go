@@ -32,6 +32,8 @@ const (
 	DefaultRouteMatchType      = "prefix"
 )
 
+var DefaultLogInclude = []string{"timestamp", "method", "path", "status_code", "latency", "service"}
+
 // Default slice values (vars, not consts, because slices can't be const)
 var (
 	DefaultRouteAllowedMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}

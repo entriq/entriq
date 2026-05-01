@@ -21,19 +21,6 @@ headers:
   remove: []
   x_forwarded_headers: true
 
-logging:
-  enabled: true
-  level: info
-  log_body: false
-  max_body_size: 1024
-  include:
-    - timestamp
-    - method
-    - path
-    - status_code
-    - latency
-    - service_name
-
 services:
 
   - name: platform-core

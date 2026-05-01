@@ -102,11 +102,17 @@ func MergeDefaults(cfg *GatewayConfig) {
 	}
 
 	// Logging defaults
+	if !cfg.Logging.Enabled {
+		cfg.Logging.Enabled = false
+	}
 	if cfg.Logging.Level == "" {
 		cfg.Logging.Level = DefaultLogLevel
 	}
 	if cfg.Logging.MaxBodySize == 0 {
 		cfg.Logging.MaxBodySize = DefaultMaxBodySize
+	}
+	if len(cfg.Logging.Include) == 0 {
+		cfg.Logging.Include = DefaultLogInclude
 	}
 
 	// Service and route defaults
