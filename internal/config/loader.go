@@ -115,6 +115,17 @@ func MergeDefaults(cfg *GatewayConfig) {
 		cfg.Logging.Include = DefaultLogInclude
 	}
 
+	// Header defaults
+	if cfg.Headers.Add == nil {
+		cfg.Headers.Add = map[string]string{}
+	}
+	if _, ok := cfg.Headers.Add["X-Gateway-Version"]; !ok {
+		cfg.Headers.Add["X-Gateway-Version"] = "entriq/" + AppVersion
+	}
+	if len(cfg.Headers.Forward) == 0 {
+		cfg.Headers.Forward = DefaultForwardHeaders
+	}
+
 	// Service and route defaults
 	for i := range cfg.Services {
 		service := &cfg.Services[i]

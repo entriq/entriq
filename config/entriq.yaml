@@ -1,5 +1,4 @@
 global:
-  timeout: 30s
   forward_auth:
     enabled: true
     url: http://localhost:8090/v1.0/verify
@@ -10,16 +9,6 @@ global:
     response_headers:
       - "X-User"
     trust_forwarded_headers: true
-
-headers:
-  add:
-    X-Gateway-Version: "1.0"
-  forward:
-    - "X-Request-ID"
-    - "Content-Type"
-    - "Accept"
-  remove: []
-  x_forwarded_headers: true
 
 services:
 

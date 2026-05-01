@@ -34,6 +34,11 @@ const (
 
 var DefaultLogInclude = []string{"timestamp", "method", "path", "status_code", "latency", "service"}
 
+// AppVersion is set at startup from the main package version variable
+var AppVersion = "dev"
+
+var DefaultForwardHeaders = []string{"X-Request-ID", "Content-Type", "Accept"}
+
 // Default slice values (vars, not consts, because slices can't be const)
 var (
 	DefaultRouteAllowedMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}

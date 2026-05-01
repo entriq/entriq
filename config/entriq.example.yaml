@@ -43,27 +43,25 @@ global:
       - "X-Auth-Groups"
     trust_forwarded_headers: true        # Automatically add X-Forwarded-* headers
 
-# Header manipulation rules (applied to all proxied requests)
+# Header manipulation rules (applied to all proxied requests — all fields optional)
 headers:
   # Headers to add to all requests
+  # Default: X-Gateway-Version: entriq/{version}
   add:
-    X-Gateway-Version: "1.0"
-    X-Gateway-Name: "entriq"
+    X-Gateway-Version: "entriq/1.0"  # override the default version header
 
-  # Headers to forward from client (whitelist)
+  # Headers to forward from client
+  # Default: X-Request-ID, Content-Type, Accept
   forward:
-    - "Authorization"
-    - "User-Agent"
     - "X-Request-ID"
-    - "X-Correlation-ID"
     - "Content-Type"
     - "Accept"
 
-  # Headers to remove before forwarding
+  # Headers to remove before forwarding (default: none)
   remove:
     - "X-Internal-Token"
 
-  # Automatically add X-Forwarded-* headers (For, Proto, Host)
+  # Automatically add X-Forwarded-* headers (For, Proto, Host) — default: false
   x_forwarded_headers: true
 
 # Microservices configuration
