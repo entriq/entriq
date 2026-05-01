@@ -6,13 +6,13 @@ global:
   # Default timeout for all services (can be overridden per service/route)
   timeout: 30s
 
-  # Default retry policy (can be overridden per service)
-  default_retry:
-    max_attempts: 3                    # Maximum number of retry attempts
-    backoff: exponential                # Backoff strategy: exponential, linear, constant
-    initial_interval: 100ms             # Initial backoff interval
-    max_interval: 2s                    # Maximum backoff interval
-    multiplier: 2.0                     # Multiplier for exponential backoff
+  # Default retry policy (can be overridden per service — all fields optional)
+  retry:
+    max_attempts: 3        # Default: 3
+    backoff: exponential   # Default: exponential — options: exponential, linear, constant
+    initial_interval: 100ms # Default: 100ms
+    max_interval: 2s       # Default: 2s
+    multiplier: 2.0        # Default: 2.0 — only used for exponential backoff
 
   # HTTP connection pool settings
   connection_pool:

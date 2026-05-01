@@ -53,7 +53,7 @@ type CORSSettings struct {
 // GlobalSettings contains global gateway settings
 type GlobalSettings struct {
 	DefaultTimeout time.Duration  `yaml:"timeout"`
-	DefaultRetry   RetryPolicy    `yaml:"default_retry"`
+	DefaultRetry   RetryPolicy    `yaml:"retry"`
 	ConnectionPool ConnectionPool `yaml:"connection_pool"`
 	ForwardAuth    *ForwardAuth   `yaml:"forward_auth,omitempty"`
 }
@@ -140,7 +140,7 @@ func (c *GatewayConfig) Validate() error {
 	}
 
 	if err := c.Global.DefaultRetry.Validate(); err != nil {
-		return fmt.Errorf("gateway.default_retry: %w", err)
+		return fmt.Errorf("global.retry: %w", err)
 	}
 
 	if err := c.Global.ConnectionPool.Validate(); err != nil {

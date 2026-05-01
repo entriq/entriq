@@ -22,7 +22,7 @@ Edit `config/entriq.yaml` to define your backend services:
 ```yaml
 global:
   timeout: 30s
-  default_retry:
+  retry:
     max_attempts: 3
     backoff: exponential
     initial_interval: 100ms
@@ -76,7 +76,7 @@ See `config/entriq.example.yaml` for a complete configuration reference with all
 
 **Global Settings**:
 - `timeout`: Timeout for all services
-- `default_retry`: Retry policy (max attempts, backoff strategy)
+- `retry`: Retry policy (max attempts, backoff strategy)
 - `connection_pool`: HTTP connection pool settings
 
 **Headers**:
