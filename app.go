@@ -29,6 +29,8 @@ func main() {
 	 * Load gateway configuration from file
 	 * Checks CONFIG_PATH env var, defaults to ./config/entriq.yaml
 	 */
+	log.Printf("Entriq gateway version %s", Version)
+	config.AppVersion = Version
 	gatewayConfig, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load gateway config: %v", err)

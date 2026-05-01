@@ -55,36 +55,36 @@ func LoadConfig(path string) (*GatewayConfig, error) {
 // User-supplied values always take precedence; defaults are only applied to zero/empty fields.
 func MergeDefaults(cfg *GatewayConfig) {
 	// Gateway defaults
-	if cfg.Gateway.DefaultTimeout == 0 {
-		cfg.Gateway.DefaultTimeout = DefaultTimeout
+	if cfg.Global.DefaultTimeout == 0 {
+		cfg.Global.DefaultTimeout = DefaultTimeout
 	}
 
 	// Default retry policy
-	if cfg.Gateway.DefaultRetry.MaxAttempts == 0 {
-		cfg.Gateway.DefaultRetry.MaxAttempts = DefaultRetryMaxAttempts
+	if cfg.Global.DefaultRetry.MaxAttempts == 0 {
+		cfg.Global.DefaultRetry.MaxAttempts = DefaultRetryMaxAttempts
 	}
-	if cfg.Gateway.DefaultRetry.Backoff == "" {
-		cfg.Gateway.DefaultRetry.Backoff = DefaultRetryBackoff
+	if cfg.Global.DefaultRetry.Backoff == "" {
+		cfg.Global.DefaultRetry.Backoff = DefaultRetryBackoff
 	}
-	if cfg.Gateway.DefaultRetry.InitialInterval == 0 {
-		cfg.Gateway.DefaultRetry.InitialInterval = DefaultRetryInitialInterval
+	if cfg.Global.DefaultRetry.InitialInterval == 0 {
+		cfg.Global.DefaultRetry.InitialInterval = DefaultRetryInitialInterval
 	}
-	if cfg.Gateway.DefaultRetry.MaxInterval == 0 {
-		cfg.Gateway.DefaultRetry.MaxInterval = DefaultRetryMaxInterval
+	if cfg.Global.DefaultRetry.MaxInterval == 0 {
+		cfg.Global.DefaultRetry.MaxInterval = DefaultRetryMaxInterval
 	}
-	if cfg.Gateway.DefaultRetry.Multiplier == 0 {
-		cfg.Gateway.DefaultRetry.Multiplier = DefaultRetryMultiplier
+	if cfg.Global.DefaultRetry.Multiplier == 0 {
+		cfg.Global.DefaultRetry.Multiplier = DefaultRetryMultiplier
 	}
 
 	// Connection pool defaults
-	if cfg.Gateway.ConnectionPool.MaxIdleConns == 0 {
-		cfg.Gateway.ConnectionPool.MaxIdleConns = DefaultMaxIdleConns
+	if cfg.Global.ConnectionPool.MaxIdleConns == 0 {
+		cfg.Global.ConnectionPool.MaxIdleConns = DefaultMaxIdleConns
 	}
-	if cfg.Gateway.ConnectionPool.MaxIdleConnsPerHost == 0 {
-		cfg.Gateway.ConnectionPool.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
+	if cfg.Global.ConnectionPool.MaxIdleConnsPerHost == 0 {
+		cfg.Global.ConnectionPool.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 	}
-	if cfg.Gateway.ConnectionPool.IdleConnTimeout == 0 {
-		cfg.Gateway.ConnectionPool.IdleConnTimeout = DefaultIdleConnTimeout
+	if cfg.Global.ConnectionPool.IdleConnTimeout == 0 {
+		cfg.Global.ConnectionPool.IdleConnTimeout = DefaultIdleConnTimeout
 	}
 
 	// CORS defaults — only applied when the field is not set in config
@@ -102,11 +102,28 @@ func MergeDefaults(cfg *GatewayConfig) {
 	}
 
 	// Logging defaults
+	if !cfg.Logging.Enabled {
+		cfg.Logging.Enabled = false
+	}
 	if cfg.Logging.Level == "" {
 		cfg.Logging.Level = DefaultLogLevel
 	}
 	if cfg.Logging.MaxBodySize == 0 {
 		cfg.Logging.MaxBodySize = DefaultMaxBodySize
+	}
+	if len(cfg.Logging.Include) == 0 {
+		cfg.Logging.Include = DefaultLogInclude
+	}
+
+	// Header defaults
+	if cfg.Headers.Add == nil {
+		cfg.Headers.Add = map[string]string{}
+	}
+	if _, ok := cfg.Headers.Add["X-Gateway-Version"]; !ok {
+		cfg.Headers.Add["X-Gateway-Version"] = "entriq/" + AppVersion
+	}
+	if len(cfg.Headers.Forward) == 0 {
+		cfg.Headers.Forward = DefaultForwardHeaders
 	}
 
 	// Service and route defaults

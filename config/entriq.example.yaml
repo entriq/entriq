@@ -1,24 +1,24 @@
 # Gateway Configuration Example
 # Copy this file to entriq.yaml and customize for your environment
 
-# Gateway global settings
-gateway:
+# Global settings
+global:
   # Default timeout for all services (can be overridden per service/route)
-  default_timeout: 30s
+  timeout: 30s
 
-  # Default retry policy (can be overridden per service)
-  default_retry:
-    max_attempts: 3                    # Maximum number of retry attempts
-    backoff: exponential                # Backoff strategy: exponential, linear, constant
-    initial_interval: 100ms             # Initial backoff interval
-    max_interval: 2s                    # Maximum backoff interval
-    multiplier: 2.0                     # Multiplier for exponential backoff
+  # Default retry policy (can be overridden per service — all fields optional)
+  retry:
+    max_attempts: 3        # Default: 3
+    backoff: exponential   # Default: exponential — options: exponential, linear, constant
+    initial_interval: 100ms # Default: 100ms
+    max_interval: 2s       # Default: 2s
+    multiplier: 2.0        # Default: 2.0 — only used for exponential backoff
 
-  # HTTP connection pool settings
+  # HTTP connection pool settings (all fields optional)
   connection_pool:
-    max_idle_conns: 100                 # Maximum idle connections total
-    max_idle_conns_per_host: 10         # Maximum idle connections per host
-    idle_conn_timeout: 90s              # How long idle connections are kept
+    max_idle_conns: 100        # Default: 100
+    max_idle_conns_per_host: 10 # Default: 10
+    idle_conn_timeout: 90s     # Default: 90s
 
   # Forward authentication (Traefik ForwardAuth style)
   forward_auth:
@@ -43,27 +43,25 @@ gateway:
       - "X-Auth-Groups"
     trust_forwarded_headers: true        # Automatically add X-Forwarded-* headers
 
-# Header manipulation rules (applied to all proxied requests)
+# Header manipulation rules (applied to all proxied requests — all fields optional)
 headers:
   # Headers to add to all requests
+  # Default: X-Gateway-Version: entriq/{version}
   add:
-    X-Gateway-Version: "1.0"
-    X-Gateway-Name: "entriq"
+    X-Gateway-Version: "entriq/1.0"  # override the default version header
 
-  # Headers to forward from client (whitelist)
+  # Headers to forward from client
+  # Default: X-Request-ID, Content-Type, Accept
   forward:
-    - "Authorization"
-    - "User-Agent"
     - "X-Request-ID"
-    - "X-Correlation-ID"
     - "Content-Type"
     - "Accept"
 
-  # Headers to remove before forwarding
+  # Headers to remove before forwarding (default: none)
   remove:
     - "X-Internal-Token"
 
-  # Automatically add X-Forwarded-* headers (For, Proto, Host)
+  # Automatically add X-Forwarded-* headers (For, Proto, Host) — default: false
   x_forwarded_headers: true
 
 # Microservices configuration
@@ -182,19 +180,20 @@ cors:
   # Optional — defaults to false
   allow_credentials: false
 
-# Logging configuration for proxied requests
+# Logging configuration for proxied requests (all fields optional)
 logging:
-  enabled: true
-  level: info                            # Log level: debug, info, warn, error
-  log_body: false                        # Include request/response bodies in logs
-  max_body_size: 1024                    # Maximum body size to log (bytes)
+  enabled: false      # Default: false
+  level: info         # Default: info — options: debug, info, warn, error
+  log_body: false     # Default: false — include request/response bodies in logs
+  max_body_size: 1024 # Default: 1024 bytes
 
   # Fields to include in logs
+  # Default: timestamp, method, path, status_code, latency, service
   include:
     - timestamp
     - method
     - path
     - status_code
     - latency
-    - service_name
+    - service
     - error

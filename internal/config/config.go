@@ -9,7 +9,7 @@ import (
 
 // GatewayConfig represents the entire gateway configuration
 type GatewayConfig struct {
-	Gateway  GatewaySettings  `yaml:"gateway"`
+	Global   GlobalSettings   `yaml:"global"`
 	Headers  HeaderSettings   `yaml:"headers"`
 	Services []Service        `yaml:"services"`
 	Logging  LoggingSettings  `yaml:"logging"`
@@ -32,6 +32,13 @@ const (
 	DefaultRouteMatchType      = "prefix"
 )
 
+var DefaultLogInclude = []string{"timestamp", "method", "path", "status_code", "latency", "service"}
+
+// AppVersion is set at startup from the main package version variable
+var AppVersion = "dev"
+
+var DefaultForwardHeaders = []string{"X-Request-ID", "Content-Type", "Accept"}
+
 // Default slice values (vars, not consts, because slices can't be const)
 var (
 	DefaultRouteAllowedMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
@@ -50,10 +57,10 @@ type CORSSettings struct {
 	AllowCredentials bool     `yaml:"allow_credentials"`
 }
 
-// GatewaySettings contains global gateway settings
-type GatewaySettings struct {
-	DefaultTimeout time.Duration  `yaml:"default_timeout"`
-	DefaultRetry   RetryPolicy    `yaml:"default_retry"`
+// GlobalSettings contains global gateway settings
+type GlobalSettings struct {
+	DefaultTimeout time.Duration  `yaml:"timeout"`
+	DefaultRetry   RetryPolicy    `yaml:"retry"`
 	ConnectionPool ConnectionPool `yaml:"connection_pool"`
 	ForwardAuth    *ForwardAuth   `yaml:"forward_auth,omitempty"`
 }
@@ -135,21 +142,21 @@ type LoggingSettings struct {
 // Validate performs validation on the configuration
 func (c *GatewayConfig) Validate() error {
 	// Validate gateway settings
-	if c.Gateway.DefaultTimeout <= 0 {
-		return errors.New("gateway.default_timeout must be greater than 0")
+	if c.Global.DefaultTimeout <= 0 {
+		return errors.New("global.timeout must be greater than 0")
 	}
 
-	if err := c.Gateway.DefaultRetry.Validate(); err != nil {
-		return fmt.Errorf("gateway.default_retry: %w", err)
+	if err := c.Global.DefaultRetry.Validate(); err != nil {
+		return fmt.Errorf("global.retry: %w", err)
 	}
 
-	if err := c.Gateway.ConnectionPool.Validate(); err != nil {
+	if err := c.Global.ConnectionPool.Validate(); err != nil {
 		return fmt.Errorf("gateway.connection_pool: %w", err)
 	}
 
 	// Validate forward auth if configured
-	if c.Gateway.ForwardAuth != nil {
-		if err := c.Gateway.ForwardAuth.Validate(); err != nil {
+	if c.Global.ForwardAuth != nil {
+		if err := c.Global.ForwardAuth.Validate(); err != nil {
 			return fmt.Errorf("gateway.forward_auth: %w", err)
 		}
 	}
@@ -292,7 +299,7 @@ func (r *Route) Validate() error {
 
 // GetTimeout returns the effective timeout for a route
 // Priority: route timeout > service timeout > gateway default timeout
-func (r *Route) GetTimeout(service *Service, gateway *GatewaySettings) time.Duration {
+func (r *Route) GetTimeout(service *Service, gateway *GlobalSettings) time.Duration {
 	if r.Timeout > 0 {
 		return r.Timeout
 	}
@@ -304,7 +311,7 @@ func (r *Route) GetTimeout(service *Service, gateway *GatewaySettings) time.Dura
 
 // GetRetryPolicy returns the effective retry policy for a service
 // Priority: service retry > gateway default retry
-func (s *Service) GetRetryPolicy(gateway *GatewaySettings) RetryPolicy {
+func (s *Service) GetRetryPolicy(gateway *GlobalSettings) RetryPolicy {
 	if s.Retry != nil {
 		return *s.Retry
 	}
@@ -313,7 +320,7 @@ func (s *Service) GetRetryPolicy(gateway *GatewaySettings) RetryPolicy {
 
 // IsForwardAuthEnabled returns true if forward auth is enabled for this route
 // Priority: route setting > global setting
-func (r *Route) IsForwardAuthEnabled(gateway *GatewaySettings) bool {
+func (r *Route) IsForwardAuthEnabled(gateway *GlobalSettings) bool {
 	// Route-specific override takes precedence
 	if r.ForwardAuth != nil && r.ForwardAuth.Enabled != nil {
 		return *r.ForwardAuth.Enabled
@@ -330,7 +337,7 @@ func (r *Route) IsForwardAuthEnabled(gateway *GatewaySettings) bool {
 
 // GetAuthServiceURL returns the auth service URL for this route
 // Priority: route override > global setting
-func (r *Route) GetAuthServiceURL(gateway *GatewaySettings) string {
+func (r *Route) GetAuthServiceURL(gateway *GlobalSettings) string {
 	// Route-specific override
 	if r.ForwardAuth != nil && r.ForwardAuth.URL != "" {
 		return r.ForwardAuth.URL

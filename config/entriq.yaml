@@ -1,15 +1,4 @@
-gateway:
-  default_timeout: 30s
-  default_retry:
-    max_attempts: 3
-    backoff: exponential
-    initial_interval: 100ms
-    max_interval: 2s
-    multiplier: 2.0
-  connection_pool:
-    max_idle_conns: 100
-    max_idle_conns_per_host: 10
-    idle_conn_timeout: 90s
+global:
   forward_auth:
     enabled: true
     url: http://localhost:8090/v1.0/verify
@@ -20,29 +9,6 @@ gateway:
     response_headers:
       - "X-User"
     trust_forwarded_headers: true
-
-headers:
-  add:
-    X-Gateway-Version: "1.0"
-  forward:
-    - "X-Request-ID"
-    - "Content-Type"
-    - "Accept"
-  remove: []
-  x_forwarded_headers: true
-
-logging:
-  enabled: true
-  level: info
-  log_body: false
-  max_body_size: 1024
-  include:
-    - timestamp
-    - method
-    - path
-    - status_code
-    - latency
-    - service_name
 
 services:
 

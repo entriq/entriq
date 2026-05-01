@@ -34,7 +34,7 @@ func New(cfg *config.GatewayConfig) (*Gateway, error) {
 	router := NewRouter(cfg)
 
 	// Create HTTP transport with connection pooling
-	transport := CreateTransport(cfg.Gateway.ConnectionPool)
+	transport := CreateTransport(cfg.Global.ConnectionPool)
 
 	// Create header manipulator
 	headerManipulator := middleware.NewHeaderManipulator(cfg.Headers)
@@ -79,9 +79,9 @@ func (g *Gateway) ProxyHandler() gin.HandlerFunc {
 		}
 
 		// Check if forward auth is enabled for this route
-		if match.Route.IsForwardAuthEnabled(&g.config.Gateway) {
+		if match.Route.IsForwardAuthEnabled(&g.config.Global) {
 			// Get auth service URL
-			authURL := match.Route.GetAuthServiceURL(&g.config.Gateway)
+			authURL := match.Route.GetAuthServiceURL(&g.config.Global)
 			if authURL == "" {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error": "Forward auth enabled but no auth service URL configured",
@@ -158,8 +158,8 @@ func (g *Gateway) buildForwardAuthConfig(authURL string) *middleware.ForwardAuth
 	config.URL = authURL
 
 	// Apply global forward auth settings if configured
-	if g.config.Gateway.ForwardAuth != nil {
-		fa := g.config.Gateway.ForwardAuth
+	if g.config.Global.ForwardAuth != nil {
+		fa := g.config.Global.ForwardAuth
 
 		if fa.Timeout > 0 {
 			config.Timeout = fa.Timeout

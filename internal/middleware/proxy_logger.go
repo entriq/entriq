@@ -41,7 +41,7 @@ type ProxyLog struct {
 	RequestID   string        `json:"request_id"`
 	Method      string        `json:"method"`
 	Path        string        `json:"path"`
-	ServiceName string        `json:"service_name"`
+	ServiceName string        `json:"service"`
 	Backend     string        `json:"backend"`
 	StatusCode  int           `json:"status_code,omitempty"`
 	Latency     time.Duration `json:"latency_ms,omitempty"`
@@ -293,8 +293,8 @@ func (l *ProxyLogger) filterFields(entry ProxyLog) map[string]interface{} {
 	if l.shouldInclude("path") {
 		result["path"] = entry.Path
 	}
-	if l.shouldInclude("service_name") {
-		result["service_name"] = entry.ServiceName
+	if l.shouldInclude("service") {
+		result["service"] = entry.ServiceName
 	}
 	if l.shouldInclude("backend") {
 		result["backend"] = entry.Backend
