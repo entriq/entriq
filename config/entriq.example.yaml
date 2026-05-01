@@ -68,7 +68,7 @@ headers:
 services:
   # Example user service
   - name: user-service
-    base_url: http://user-service:8081
+    url: http://user-service:8081
     timeout: 10s                         # Service-level timeout (overrides gateway default)
 
     # Service-level retry policy (overrides gateway default)
@@ -100,7 +100,7 @@ services:
 
   # Example transaction service
   - name: transaction-service
-    base_url: http://transaction-service:8082
+    url: http://transaction-service:8082
     timeout: 15s
     routes:
       - path: /v1.0/transaction
@@ -109,7 +109,7 @@ services:
 
   # Example authentication service
   - name: auth-service
-    base_url: http://auth-service:8083
+    url: http://auth-service:8083
     timeout: 5s
     routes:
       # Login endpoint - no auth required

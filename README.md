@@ -30,12 +30,12 @@ global:
 
 services:
   - name: user-service
-    base_url: http://user-service:8081
+    url: http://user-service:8081
     routes:
       - path: /users
 
   - name: transaction-service
-    base_url: http://transaction-service:8082
+    url: http://transaction-service:8082
     routes:
       - path: /v1.0/transaction
 ```
@@ -87,7 +87,7 @@ See `config/entriq.example.yaml` for a complete configuration reference with all
 
 **Services**:
 - `name`: Service identifier
-- `base_url`: Backend service URL
+- `url`: Backend service URL
 - `timeout`: Service-specific timeout (optional)
 - `retry`: Service-specific retry policy (optional)
 - `routes`: List of routing rules

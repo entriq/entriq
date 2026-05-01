@@ -29,7 +29,7 @@ func NewProxyHandler(match *RouteMatch, cfg *config.GatewayConfig, transport *ht
 // ServeHTTP implements the http.Handler interface
 func (p *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Parse backend URL
-	backend, err := url.Parse(p.match.Service.BaseURL)
+	backend, err := url.Parse(p.match.Service.URL)
 	if err != nil {
 		http.Error(w, "Invalid backend URL", http.StatusInternalServerError)
 		return
