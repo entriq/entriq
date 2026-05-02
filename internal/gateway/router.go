@@ -53,9 +53,9 @@ func NewRouter(cfg *config.GatewayConfig) *Router {
 			}
 
 			if route.MatchType == "exact" {
-				router.addExactRoute(route.Path, route.Method, match)
+				router.addExactRoute(route.Path, route.Methods, match)
 			} else {
-				router.addPrefixRoute(route.Path, route.Method, match)
+				router.addPrefixRoute(route.Path, route.Methods, match)
 			}
 		}
 	}
@@ -116,7 +116,7 @@ func (r *Router) Match(method, path string) (*RouteMatch, error) {
 	for _, pr := range r.prefixRoutes {
 		if strings.HasPrefix(path, pr.path) {
 			// Check if method matches
-			if r.methodMatches(method, pr.match.Route.Method) {
+			if r.methodMatches(method, pr.match.Route.Methods) {
 				return pr.match, nil
 			}
 		}
@@ -162,7 +162,7 @@ func (r *Router) DebugRoutes() string {
 
 	sb.WriteString("\nPrefix Routes:\n")
 	for _, pr := range r.prefixRoutes {
-		for _, method := range pr.match.Route.Method {
+		for _, method := range pr.match.Route.Methods {
 			sb.WriteString(fmt.Sprintf("  %s %s (prefix)\n", method, pr.path))
 		}
 	}

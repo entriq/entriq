@@ -17,7 +17,7 @@ services:
     timeout: 10s
     routes:
       - path: /v1.0
-        method: ["GET", "POST"]
+        methods: ["GET", "POST"]
         match_type: prefix
         strip_path: false
 

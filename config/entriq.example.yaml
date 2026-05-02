@@ -81,14 +81,14 @@ services:
     routes:
       # Prefix match: /users, /users/123, /users/123/profile all match
       - path: /users
-        method: ["GET", "POST", "PUT", "DELETE"]
+        methods: ["GET", "POST", "PUT", "DELETE"]
         match_type: prefix
         strip_path: false                # If true, "/users/123" becomes "/123" when forwarding
         # Forward auth inherits from global setting (enabled: true)
 
       # Exact match: only /users/bulk matches
       - path: /users/bulk
-        method: ["POST"]
+        methods: ["POST"]
         match_type: exact
         timeout: 60s                     # Route-level timeout (overrides service and gateway)
         headers:
@@ -114,24 +114,24 @@ services:
     routes:
       # Login endpoint - no auth required
       - path: /auth/login
-        method: ["POST"]
+        methods: ["POST"]
         match_type: exact
         forward_auth:
           enabled: false                 # Public endpoint, no auth needed
 
       # Logout endpoint - auth required (inherits from global)
       - path: /auth/logout
-        method: ["POST"]
+        methods: ["POST"]
         match_type: exact
 
       # Token refresh endpoint - auth required (inherits from global)
       - path: /auth/refresh
-        method: ["POST"]
+        methods: ["POST"]
         match_type: exact
 
       # Verify endpoint - this is the actual forward auth endpoint
       - path: /auth/verify
-        method: ["GET", "POST"]
+        methods: ["GET", "POST"]
         match_type: exact
         forward_auth:
           enabled: false                 # Don't auth the auth endpoint itself!

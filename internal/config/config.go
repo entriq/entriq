@@ -102,7 +102,7 @@ type Service struct {
 // Route represents a routing rule
 type Route struct {
 	Path        string             `yaml:"path"`
-	Method      []string           `yaml:"method,omitempty"`
+	Methods     []string           `yaml:"methods,omitempty"`
 	MatchType   string             `yaml:"match_type"` // "prefix" or "exact"
 	StripPath   bool               `yaml:"strip_path"`
 	Timeout     time.Duration      `yaml:"timeout,omitempty"`
@@ -288,7 +288,7 @@ func (r *Route) Validate() error {
 		"PATCH": true, "HEAD": true, "OPTIONS": true,
 	}
 
-	for _, method := range r.Method {
+	for _, method := range r.Methods {
 		if !validMethods[method] {
 			return fmt.Errorf("invalid HTTP method: %s", method)
 		}
