@@ -136,8 +136,8 @@ func MergeDefaults(cfg *GatewayConfig) {
 			if route.MatchType == "" {
 				route.MatchType = DefaultRouteMatchType
 			}
-			if len(route.Method) == 0 {
-				route.Method = DefaultRouteAllowedMethods
+			if len(route.Methods) == 0 {
+				route.Methods = DefaultRouteAllowedMethods
 			}
 		}
 	}
