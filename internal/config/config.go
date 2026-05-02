@@ -30,6 +30,7 @@ const (
 	DefaultLogLevel            = "info"
 	DefaultMaxBodySize         = 1024
 	DefaultRouteMatchType      = "prefix"
+	MaxTimeout                 = 5 * time.Minute
 )
 
 var DefaultLogInclude = []string{"timestamp", "method", "path", "status_code", "latency", "service"}
@@ -145,6 +146,9 @@ func (c *GatewayConfig) Validate() error {
 	if c.Global.DefaultTimeout <= 0 {
 		return errors.New("global.timeout must be greater than 0")
 	}
+	if c.Global.DefaultTimeout > MaxTimeout {
+		return fmt.Errorf("global.timeout must not exceed %s", MaxTimeout)
+	}
 
 	if err := c.Global.DefaultRetry.Validate(); err != nil {
 		return fmt.Errorf("global.retry: %w", err)
@@ -179,6 +183,9 @@ func (c *GatewayConfig) Validate() error {
 
 		if service.URL == "" {
 			return fmt.Errorf("services[%d] (%s): url is required", i, service.Name)
+		}
+		if service.Timeout > MaxTimeout {
+			return fmt.Errorf("services[%d] (%s): timeout must not exceed %s", i, service.Name, MaxTimeout)
 		}
 
 		if len(service.Routes) == 0 {
@@ -233,6 +240,9 @@ func (fa *ForwardAuth) Validate() error {
 
 	if fa.Timeout < 0 {
 		return errors.New("timeout must be >= 0")
+	}
+	if fa.Timeout > MaxTimeout {
+		return fmt.Errorf("timeout must not exceed %s", MaxTimeout)
 	}
 
 	// Set default timeout if not specified
@@ -292,6 +302,10 @@ func (r *Route) Validate() error {
 		if !validMethods[method] {
 			return fmt.Errorf("invalid HTTP method: %s", method)
 		}
+	}
+
+	if r.Timeout > MaxTimeout {
+		return fmt.Errorf("timeout must not exceed %s", MaxTimeout)
 	}
 
 	return nil
