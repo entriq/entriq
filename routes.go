@@ -19,8 +19,11 @@ func Routes(Router *gin.Engine, gw *gateway.Gateway) {
 		})
 
 		Routes_Probes.GET("/ready", func(c *gin.Context) {
-			// TODO: Add gateway health checks here if needed
-			// For now, just return 200 OK
+			cfg := gw.GetConfig()
+			if cfg == nil || len(cfg.Services) == 0 {
+				c.AbortWithStatus(503)
+				return
+			}
 			c.AbortWithStatus(200)
 		})
 	}
