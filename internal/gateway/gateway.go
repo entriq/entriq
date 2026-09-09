@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"entriq/internal/config"
-	"entriq/internal/middleware"
+	"sort"
+	"strings"
 	"sync"
 	"time"
+
+	"entriq/internal/config"
+	"entriq/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -90,7 +93,7 @@ func (g *Gateway) ProxyHandler() gin.HandlerFunc {
 			}
 
 			// Get or create cached forward auth middleware
-			authMiddleware := g.getOrCreateAuthMiddleware(authURL)
+			authMiddleware := g.getOrCreateAuthMiddleware(authURL, match.Route)
 			authMiddleware(c)
 
 			// If auth middleware aborted the request, log and stop here
@@ -153,38 +156,69 @@ func (g *Gateway) GetStats() map[string]interface{} {
 }
 
 // buildForwardAuthConfig creates a ForwardAuthConfig from the gateway configuration
-func (g *Gateway) buildForwardAuthConfig(authURL string) *middleware.ForwardAuthConfig {
-	config := middleware.DefaultForwardAuthConfig()
-	config.URL = authURL
+// and any per-route overrides.
+func (g *Gateway) buildForwardAuthConfig(authURL string, route *config.Route) *middleware.ForwardAuthConfig {
+	cfg := middleware.DefaultForwardAuthConfig()
+	cfg.URL = authURL
 
 	// Apply global forward auth settings if configured
 	if g.config.Global.ForwardAuth != nil {
 		fa := g.config.Global.ForwardAuth
 
 		if fa.Timeout > 0 {
-			config.Timeout = fa.Timeout
+			cfg.Timeout = fa.Timeout
 		}
 
 		if len(fa.ForwardHeaders) > 0 {
-			config.ForwardHeaders = fa.ForwardHeaders
+			cfg.ForwardHeaders = fa.ForwardHeaders
 		}
 
 		if len(fa.ResponseHeaders) > 0 {
-			config.ResponseHeaders = fa.ResponseHeaders
+			cfg.ResponseHeaders = fa.ResponseHeaders
 		}
 
-		config.TrustForwardedHeaders = fa.TrustForwardedHeaders
+		cfg.TrustForwardedHeaders = fa.TrustForwardedHeaders
 	}
 
-	return config
+	// Per-route overrides would be applied here when RouteForwardAuth
+	// is extended with Timeout, ForwardHeaders, ResponseHeaders fields.
+	_ = route
+
+	return cfg
 }
 
-// getOrCreateAuthMiddleware retrieves or creates a forward auth middleware instance
-// Middlewares are cached by auth URL to avoid creating new HTTP clients per request
-func (g *Gateway) getOrCreateAuthMiddleware(authURL string) gin.HandlerFunc {
+// authConfigSignature returns a stable cache key derived from the full effective
+// ForwardAuthConfig, so that two routes sharing an auth URL but differing in
+// headers or timeout get distinct middleware instances.
+func authConfigSignature(cfg *middleware.ForwardAuthConfig) string {
+	fwd := make([]string, len(cfg.ForwardHeaders))
+	copy(fwd, cfg.ForwardHeaders)
+	sort.Strings(fwd)
+
+	resp := make([]string, len(cfg.ResponseHeaders))
+	copy(resp, cfg.ResponseHeaders)
+	sort.Strings(resp)
+
+	return fmt.Sprintf("%s|%s|%s|%s|%v",
+		cfg.URL,
+		cfg.Timeout,
+		strings.Join(fwd, ","),
+		strings.Join(resp, ","),
+		cfg.TrustForwardedHeaders,
+	)
+}
+
+// getOrCreateAuthMiddleware retrieves or creates a forward auth middleware instance.
+// Middlewares are cached by the full effective config signature (URL + headers + timeout)
+// to avoid creating new HTTP clients per request while correctly handling per-route
+// config differences.
+func (g *Gateway) getOrCreateAuthMiddleware(authURL string, route *config.Route) gin.HandlerFunc {
+	authConfig := g.buildForwardAuthConfig(authURL, route)
+	cacheKey := authConfigSignature(authConfig)
+
 	// Try read lock first (fast path for existing middlewares)
 	g.authMiddlewareMutex.RLock()
-	if mw, exists := g.authMiddlewareCache[authURL]; exists {
+	if mw, exists := g.authMiddlewareCache[cacheKey]; exists {
 		g.authMiddlewareMutex.RUnlock()
 		return mw
 	}
@@ -195,14 +229,13 @@ func (g *Gateway) getOrCreateAuthMiddleware(authURL string) gin.HandlerFunc {
 	defer g.authMiddlewareMutex.Unlock()
 
 	// Double-check after acquiring write lock (another goroutine might have created it)
-	if mw, exists := g.authMiddlewareCache[authURL]; exists {
+	if mw, exists := g.authMiddlewareCache[cacheKey]; exists {
 		return mw
 	}
 
 	// Create new middleware instance
-	authConfig := g.buildForwardAuthConfig(authURL)
 	mw := middleware.ForwardAuth(authConfig)
-	g.authMiddlewareCache[authURL] = mw
+	g.authMiddlewareCache[cacheKey] = mw
 
 	log.Printf("Created forward auth middleware for URL: %s", authURL)
 	return mw
