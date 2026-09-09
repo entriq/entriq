@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"entriq/internal/config"
+	"entriq/internal/retry"
 )
 
 // ProxyHandler handles proxying requests to backend services
@@ -51,57 +52,69 @@ func (p *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Update request with timeout context
 	r = r.WithContext(ctx)
 
-	// Create reverse proxy
+	// Check if retry should be used
+	retryPolicy := p.match.Service.GetRetryPolicy(&p.config.Global)
+	if retryPolicy.MaxAttempts > 1 {
+		p.serveWithRetry(w, r, backend, retryPolicy)
+		return
+	}
+
+	p.serveDirect(w, r, backend)
+}
+
+// serveWithRetry proxies the request using retry.ExecuteWithRetry.
+func (p *ProxyHandler) serveWithRetry(w http.ResponseWriter, r *http.Request, backend *url.URL, policy config.RetryPolicy) {
+	outReq := p.buildBackendRequest(r, backend)
+
+	client := &http.Client{Transport: p.transport}
+	resp, err := retry.ExecuteWithRetry(outReq.Context(), outReq, client, policy)
+	if err != nil {
+		if err == context.DeadlineExceeded {
+			http.Error(w, "Gateway Timeout", http.StatusGatewayTimeout)
+			return
+		}
+		if err == context.Canceled {
+			return
+		}
+		http.Error(w, "Bad Gateway", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Copy response headers
+	for key, vals := range resp.Header {
+		for _, val := range vals {
+			w.Header().Add(key, val)
+		}
+	}
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
+}
+
+// serveDirect proxies the request through httputil.ReverseProxy (no retry).
+func (p *ProxyHandler) serveDirect(w http.ResponseWriter, r *http.Request, backend *url.URL) {
 	proxy := httputil.NewSingleHostReverseProxy(backend)
 	proxy.Transport = p.transport
 
 	// Customize the Director function to handle path rewriting
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
-		// Call original director to set up basic proxying
 		originalDirector(req)
-
-		// Handle path stripping if configured
-		if p.match.Route.StripPath {
-			// Remove the matched prefix from the path
-			newPath := strings.TrimPrefix(req.URL.Path, p.match.Route.Path)
-			if newPath == "" {
-				newPath = "/"
-			}
-			req.URL.Path = newPath
-		}
-
-		// Update the request URL to point to the backend
-		req.URL.Scheme = backend.Scheme
-		req.URL.Host = backend.Host
-
-		// Preserve original path if not stripping
-		if !p.match.Route.StripPath {
-			req.URL.Path = r.URL.Path
-		}
-
-		// Preserve query parameters
-		req.URL.RawQuery = r.URL.RawQuery
+		p.applyDirector(req, r, backend)
 	}
 
 	// Handle errors from the backend
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		// Check if it's a timeout error
 		if err == context.DeadlineExceeded {
 			http.Error(w, "Gateway Timeout", http.StatusGatewayTimeout)
 			return
 		}
-
-		// Check if it's a canceled context (client disconnected)
 		if err == context.Canceled {
 			return
 		}
-
-		// Generic backend error
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 	}
 
-	// Proxy the request
 	proxy.ServeHTTP(w, r)
 }
 
@@ -234,6 +247,38 @@ func copyUntilDone(ctx context.Context, dst, src net.Conn) {
 		dst.Close()
 		<-done
 	}
+}
+
+// buildBackendRequest creates an outbound request for the backend, applying
+// the same path rewriting and header forwarding as the Director.
+func (p *ProxyHandler) buildBackendRequest(r *http.Request, backend *url.URL) *http.Request {
+	outReq := r.Clone(r.Context())
+	outReq.URL.Scheme = backend.Scheme
+	outReq.URL.Host = backend.Host
+	outReq.Host = backend.Host
+	outReq.RequestURI = "" // http.Client.Do rejects requests with RequestURI set
+	p.applyDirector(outReq, r, backend)
+	return outReq
+}
+
+// applyDirector applies path stripping and URL rewriting to an outbound request.
+func (p *ProxyHandler) applyDirector(req *http.Request, originalReq *http.Request, backend *url.URL) {
+	if p.match.Route.StripPath {
+		newPath := strings.TrimPrefix(req.URL.Path, p.match.Route.Path)
+		if newPath == "" {
+			newPath = "/"
+		}
+		req.URL.Path = newPath
+	}
+
+	req.URL.Scheme = backend.Scheme
+	req.URL.Host = backend.Host
+
+	if !p.match.Route.StripPath {
+		req.URL.Path = originalReq.URL.Path
+	}
+
+	req.URL.RawQuery = originalReq.URL.RawQuery
 }
 
 // CreateTransport creates an HTTP transport with connection pooling settings
