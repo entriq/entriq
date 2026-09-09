@@ -122,12 +122,25 @@ func (g *Gateway) ProxyHandler() gin.HandlerFunc {
 		// Log request start
 		requestID := g.proxyLogger.LogRequest(c.Request, match.Service.Name, match.Service.URL)
 
+		// Create proxy handler
+		proxyHandler := NewProxyHandler(match, g.config, g.transport)
+
+		// Branch: WebSocket upgrade vs normal HTTP proxy
+		if IsWebSocketUpgrade(c.Request) {
+			log.Printf("[ws] open  request_id=%s service=%s path=%s", requestID, match.Service.Name, c.Request.URL.Path)
+			err := proxyHandler.ServeWebSocket(c.Writer, c.Request)
+			latency := time.Since(startTime)
+			if err != nil {
+				log.Printf("[ws] close request_id=%s service=%s duration=%s error=%s", requestID, match.Service.Name, latency, err)
+			} else {
+				log.Printf("[ws] close request_id=%s service=%s duration=%s", requestID, match.Service.Name, latency)
+			}
+			return
+		}
+
 		// Wrap response writer to capture status code
 		wrappedWriter := g.proxyLogger.WrapResponseWriter(c.Writer)
 		c.Writer = wrappedWriter
-
-		// Create proxy handler
-		proxyHandler := NewProxyHandler(match, g.config, g.transport)
 
 		// Execute proxy (this handles the actual request forwarding)
 		proxyHandler.ServeHTTP(c.Writer, c.Request)
