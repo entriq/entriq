@@ -27,6 +27,32 @@ var corsResponseHeaders = []string{
 	"Access-Control-Expose-Headers",
 }
 
+// stripCORSHeaders removes CORS headers set by the backend so the gateway's
+// own CORS middleware remains the single source of truth for the client.
+func stripCORSHeaders(h http.Header) {
+	for _, header := range corsResponseHeaders {
+		h.Del(header)
+	}
+
+	// Drop only the "Origin" value from Vary, preserving any other
+	// values the backend may have legitimately set for caching.
+	if vary := h.Values("Vary"); len(vary) > 0 {
+		remaining := make([]string, 0, len(vary))
+		for _, v := range vary {
+			for _, part := range strings.Split(v, ",") {
+				part = strings.TrimSpace(part)
+				if part != "" && !strings.EqualFold(part, "Origin") {
+					remaining = append(remaining, part)
+				}
+			}
+		}
+		h.Del("Vary")
+		if len(remaining) > 0 {
+			h.Set("Vary", strings.Join(remaining, ", "))
+		}
+	}
+}
+
 // ProxyHandler handles proxying requests to backend services
 type ProxyHandler struct {
 	match     *RouteMatch
@@ -91,6 +117,8 @@ func (p *ProxyHandler) serveWithRetry(w http.ResponseWriter, r *http.Request, ba
 	}
 	defer resp.Body.Close()
 
+	stripCORSHeaders(resp.Header)
+
 	// Copy response headers
 	for key, vals := range resp.Header {
 		for _, val := range vals {
@@ -116,27 +144,7 @@ func (p *ProxyHandler) serveDirect(w http.ResponseWriter, r *http.Request, backe
 	// Strip any CORS headers set by the backend so the gateway's own
 	// CORS middleware remains the single source of truth for the client.
 	proxy.ModifyResponse = func(resp *http.Response) error {
-		for _, header := range corsResponseHeaders {
-			resp.Header.Del(header)
-		}
-
-		// Drop only the "Origin" value from Vary, preserving any other
-		// values the backend may have legitimately set for caching.
-		if vary := resp.Header.Values("Vary"); len(vary) > 0 {
-			remaining := make([]string, 0, len(vary))
-			for _, v := range vary {
-				for _, part := range strings.Split(v, ",") {
-					part = strings.TrimSpace(part)
-					if part != "" && !strings.EqualFold(part, "Origin") {
-						remaining = append(remaining, part)
-					}
-				}
-			}
-			resp.Header.Del("Vary")
-			if len(remaining) > 0 {
-				resp.Header.Set("Vary", strings.Join(remaining, ", "))
-			}
-		}
+		stripCORSHeaders(resp.Header)
 		return nil
 	}
 
