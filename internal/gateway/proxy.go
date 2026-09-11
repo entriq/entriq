@@ -17,6 +17,16 @@ import (
 	"entriq/internal/retry"
 )
 
+// corsResponseHeaders lists the CORS-related headers stripped from backend
+// responses so they don't duplicate the ones set by the gateway's CORS middleware.
+var corsResponseHeaders = []string{
+	"Access-Control-Allow-Origin",
+	"Access-Control-Allow-Credentials",
+	"Access-Control-Allow-Methods",
+	"Access-Control-Allow-Headers",
+	"Access-Control-Expose-Headers",
+}
+
 // ProxyHandler handles proxying requests to backend services
 type ProxyHandler struct {
 	match     *RouteMatch
@@ -101,6 +111,33 @@ func (p *ProxyHandler) serveDirect(w http.ResponseWriter, r *http.Request, backe
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
 		p.applyDirector(req, r, backend)
+	}
+
+	// Strip any CORS headers set by the backend so the gateway's own
+	// CORS middleware remains the single source of truth for the client.
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		for _, header := range corsResponseHeaders {
+			resp.Header.Del(header)
+		}
+
+		// Drop only the "Origin" value from Vary, preserving any other
+		// values the backend may have legitimately set for caching.
+		if vary := resp.Header.Values("Vary"); len(vary) > 0 {
+			remaining := make([]string, 0, len(vary))
+			for _, v := range vary {
+				for _, part := range strings.Split(v, ",") {
+					part = strings.TrimSpace(part)
+					if part != "" && !strings.EqualFold(part, "Origin") {
+						remaining = append(remaining, part)
+					}
+				}
+			}
+			resp.Header.Del("Vary")
+			if len(remaining) > 0 {
+				resp.Header.Set("Vary", strings.Join(remaining, ", "))
+			}
+		}
+		return nil
 	}
 
 	// Handle errors from the backend
